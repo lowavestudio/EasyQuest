@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id // Telegram User ID
+  firstName String
+  username  String?
+  photoUrl  String?
+  role      String   @default("executor") // 'executor' | 'customer'
+  balance   Int      @default(150)
+  createdAt DateTime @default(now())
+
+  // Stats and Rating
+  rating      Float    @default(5.0)
+  reviewCount Int      @default(0)
+
+  // Relations
+  tasksCreated Task[] @relation("CustomerTasks")
+  tasksAccepted Task[] @relation("ExecutorTasks")
+  transactions Transaction[]
+  reviews      Review[] @relation("UserReviews") // Reviews given TO this user
+  messages     Message[]
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  reward      Int
+  status      String   @default("available") // 'available', 'accepted', 'under_review', 'completed', 'cancelled'
+  
+  // Geolocation
+  lat         Float
+  lng         Float
+  distance    String   @default("near you") 
+  timeAllowed String   @default("15 mins")
+
+  // Relations
+  customerId  String
+  customer    User     @relation("CustomerTasks", fields: [customerId], references: [id])
+  executorId  String?
+  executor    User?    @relation("ExecutorTasks", fields: [executorId], references: [id])
+  
+  // Media proof
+  proofPhotoUrl String?
+  review        Review?
+  messages      Message[]
+
+  acceptedAt  DateTime? // When executor accepted it
+  completedAt DateTime? // When customer approved it
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  title     String
+  amount    Int
+  type      String   // 'earn', 'bonus', 'spend', 'refund'
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int      // 1-5
+  comment   String?
+  
+  taskId    Int      @unique
+  task      Task     @relation(fields: [taskId], references: [id])
+  
+  // The user being reviewed (executor)
+  userId    String
+  user      User     @relation("UserReviews", fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  text      String
+  
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id])
+  
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  
+  readAt    DateTime? // NULL means unread
+  createdAt DateTime @default(now())
+}
