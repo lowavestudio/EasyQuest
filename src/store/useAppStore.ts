@@ -32,6 +32,7 @@ export interface Task {
     executorId?: string;
     proofPhotoUrl?: string;
     category?: string;
+    address?: string;
 }
 
 export interface Transaction {
@@ -75,7 +76,7 @@ interface AppState {
     acceptTask: (id: number) => Promise<void>;
     completeTask: (id: number, proofPhotoUrl?: string) => Promise<void>;
     approveTask: (id: number, rating?: number, comment?: string) => Promise<void>;
-    addTask: (task: { title: string, description: string, reward: number, lat: number, lng: number, category: string }) => Promise<void>;
+    addTask: (task: { title: string, description: string, reward: number, lat: number, lng: number, category: string, address?: string }) => Promise<void>;
     setUserLocation: (coords: [number, number]) => void;
     abandonTask: (id: number) => Promise<void>;
     cancelOwnTask: (id: number) => Promise<void>;

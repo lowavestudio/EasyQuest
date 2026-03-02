@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { Navigation, ChevronLeft, Send, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle } from 'lucide-react';
+import { ChevronLeft, Send, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Search, X, MapPin, Loader2 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix leaflet icon
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
 
 const CATEGORIES = [
     { id: 'delivery', label: 'Доставка', icon: Truck, color: '#f59e0b' },
@@ -11,6 +22,65 @@ const CATEGORIES = [
     { id: 'promo', label: 'Промо', icon: Megaphone, color: '#10b981' },
     { id: 'other', label: 'Другое', icon: HelpCircle, color: '#64748b' },
 ];
+
+interface NominatimResult {
+    place_id: number;
+    display_name: string;
+    lat: string;
+    lon: string;
+}
+
+// Sub-component: flies the map to a new position
+function FlyTo({ position }: { position: [number, number] }) {
+    const map = useMap();
+    useEffect(() => {
+        map.flyTo(position, 16, { animate: true, duration: 0.8 });
+    }, [position, map]);
+    return null;
+}
+
+// Sub-component: draggable marker that updates position on click or drag
+function DraggableMarker({
+    position,
+    onMove,
+}: {
+    position: [number, number];
+    onMove: (lat: number, lng: number) => void;
+}) {
+    useMapEvents({
+        click(e) {
+            onMove(e.latlng.lat, e.latlng.lng);
+        },
+    });
+
+    const markerIcon = L.divIcon({
+        className: '',
+        html: `<div style="
+            width:32px; height:32px;
+            background: linear-gradient(135deg,#3b82f6,#8b5cf6);
+            border: 3px solid white;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 4px 12px rgba(59,130,246,0.5);
+        "></div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+    });
+
+    return (
+        <Marker
+            position={position}
+            icon={markerIcon}
+            draggable
+            eventHandlers={{
+                dragend(e) {
+                    const latlng = (e.target as L.Marker).getLatLng();
+                    onMove(latlng.lat, latlng.lng);
+                },
+            }}
+        />
+    );
+}
 
 const CreateTask = () => {
     const navigate = useNavigate();
@@ -22,30 +92,103 @@ const CreateTask = () => {
     const [category, setCategory] = useState('other');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Location state
+    const defaultPos: [number, number] = userLocation ?? [51.505, -0.09];
+    const [markerPos, setMarkerPos] = useState<[number, number]>(defaultPos);
+    const [flyToPos, setFlyToPos] = useState<[number, number] | null>(null);
+    const [address, setAddress] = useState('');
+
+    // Address search
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showResults, setShowResults] = useState(false);
+    const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const rewardNum = Number(reward) || 0;
     const canSubmit = title.trim() && description.trim() && rewardNum > 0 && rewardNum <= balance && !isSubmitting;
+
+    // Reverse geocode when marker moves
+    const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+        try {
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru`,
+                { headers: { 'Accept-Language': 'ru' } }
+            );
+            const data = await res.json();
+            if (data.display_name) {
+                // Shorten to city + street
+                const parts = data.display_name.split(', ');
+                setAddress(parts.slice(0, 3).join(', '));
+            }
+        } catch {
+            setAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        }
+    }, []);
+
+    const handleMarkerMove = useCallback((lat: number, lng: number) => {
+        setMarkerPos([lat, lng]);
+        reverseGeocode(lat, lng);
+    }, [reverseGeocode]);
+
+    // Set initial address
+    useEffect(() => {
+        reverseGeocode(defaultPos[0], defaultPos[1]);
+    }, []);
+
+    // Address search with debounce
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const q = e.target.value;
+        setSearchQuery(q);
+        if (searchDebounce.current) clearTimeout(searchDebounce.current);
+        if (!q.trim()) { setSearchResults([]); setShowResults(false); return; }
+        searchDebounce.current = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&accept-language=ru`,
+                    { headers: { 'Accept-Language': 'ru' } }
+                );
+                const data: NominatimResult[] = await res.json();
+                setSearchResults(data);
+                setShowResults(true);
+            } catch {
+                setSearchResults([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500);
+    };
+
+    const handleSelectResult = (result: NominatimResult) => {
+        const lat = parseFloat(result.lat);
+        const lng = parseFloat(result.lon);
+        setMarkerPos([lat, lng]);
+        setFlyToPos([lat, lng]);
+        const parts = result.display_name.split(', ');
+        setAddress(parts.slice(0, 3).join(', '));
+        setSearchQuery('');
+        setShowResults(false);
+        setSearchResults([]);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!canSubmit) return;
-
         setIsSubmitting(true);
-        const lat = userLocation ? userLocation[0] : 51.505;
-        const lng = userLocation ? userLocation[1] : -0.09;
 
         await addTask({
             title: title.trim(),
             description: description.trim(),
             reward: rewardNum,
-            lat,
-            lng,
+            lat: markerPos[0],
+            lng: markerPos[1],
             category,
         });
 
         if (window.Telegram?.WebApp?.HapticFeedback) {
             window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
         }
-
         navigate('/feed');
     };
 
@@ -59,7 +202,7 @@ const CreateTask = () => {
                 <div style={{ width: 36 }} />
             </div>
 
-            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
                     {/* Category picker */}
@@ -75,26 +218,16 @@ const CreateTask = () => {
                                         type="button"
                                         onClick={() => setCategory(cat.id)}
                                         style={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            gap: '6px',
-                                            padding: '12px 8px',
-                                            borderRadius: '14px',
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                                            padding: '12px 8px', borderRadius: '14px',
                                             border: `2px solid ${isActive ? cat.color : 'var(--border-color)'}`,
                                             background: isActive ? `${cat.color}18` : 'var(--card-bg)',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.18s ease',
+                                            cursor: 'pointer', transition: 'all 0.18s ease',
                                             transform: isActive ? 'scale(1.03)' : 'scale(1)',
                                         }}
                                     >
                                         <Icon size={20} color={isActive ? cat.color : 'var(--tg-theme-hint-color)'} />
-                                        <span style={{
-                                            fontSize: '11px',
-                                            fontWeight: 700,
-                                            color: isActive ? cat.color : 'var(--tg-theme-hint-color)',
-                                            fontFamily: "'Inter', sans-serif",
-                                        }}>
+                                        <span style={{ fontSize: '11px', fontWeight: 700, color: isActive ? cat.color : 'var(--tg-theme-hint-color)', fontFamily: "'Inter', sans-serif" }}>
                                             {cat.label}
                                         </span>
                                     </button>
@@ -103,6 +236,7 @@ const CreateTask = () => {
                         </div>
                     </div>
 
+                    {/* Title */}
                     <div className="form-group">
                         <label className="form-label">Название</label>
                         <input
@@ -115,19 +249,21 @@ const CreateTask = () => {
                         />
                     </div>
 
+                    {/* Description */}
                     <div className="form-group">
                         <label className="form-label">Описание и инструкции</label>
                         <textarea
                             className="form-input"
                             value={description}
                             onChange={e => setDescription(e.target.value)}
-                            rows={4}
+                            rows={3}
                             style={{ resize: 'none' }}
                             placeholder="Что должен сделать исполнитель?"
                             disabled={isSubmitting}
                         />
                     </div>
 
+                    {/* Reward */}
                     <div className="form-group">
                         <label className="form-label">Награда (Stars)</label>
                         <input
@@ -145,20 +281,132 @@ const CreateTask = () => {
                         )}
                     </div>
 
-                    <div className="detail-section" style={{ padding: '14px 16px' }}>
-                        <div style={{ fontSize: '13px', color: 'var(--tg-theme-hint-color)', display: 'flex', alignItems: 'center', gap: '8px', lineHeight: 1.5 }}>
-                            <Navigation size={16} color="var(--accent-color)" />
-                            Задание будет привязано к вашей текущей GPS-локации
+                    {/* Location Section */}
+                    <div className="form-group">
+                        <label className="form-label">Место выполнения</label>
+
+                        {/* Address Search */}
+                        <div style={{ position: 'relative', marginBottom: '10px' }}>
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: '10px',
+                                background: 'var(--card-bg)', border: '1.5px solid var(--border-color)',
+                                borderRadius: '12px', padding: '10px 14px',
+                            }}>
+                                {isSearching
+                                    ? <Loader2 size={16} color="var(--accent-color)" className="spin-anim" style={{ flexShrink: 0 }} />
+                                    : <Search size={16} color="var(--tg-theme-hint-color)" style={{ flexShrink: 0 }} />
+                                }
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={handleSearchChange}
+                                    onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                                    placeholder="Поиск адреса..."
+                                    style={{
+                                        flex: 1, border: 'none', background: 'transparent', outline: 'none',
+                                        fontSize: '14px', color: 'var(--tg-theme-text-color)',
+                                        fontFamily: "'Inter', sans-serif",
+                                    }}
+                                />
+                                {searchQuery && (
+                                    <button type="button" onClick={() => { setSearchQuery(''); setShowResults(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                                        <X size={16} color="var(--tg-theme-hint-color)" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Dropdown results */}
+                            {showResults && searchResults.length > 0 && (
+                                <div style={{
+                                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 1000,
+                                    background: 'var(--card-bg)', border: '1px solid var(--border-color)',
+                                    borderRadius: '12px', overflow: 'hidden',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                                }}>
+                                    {searchResults.map(result => {
+                                        const parts = result.display_name.split(', ');
+                                        return (
+                                            <button
+                                                key={result.place_id}
+                                                type="button"
+                                                onClick={() => handleSelectResult(result)}
+                                                style={{
+                                                    width: '100%', padding: '12px 14px', textAlign: 'left',
+                                                    background: 'transparent', border: 'none', cursor: 'pointer',
+                                                    borderBottom: '1px solid var(--border-color)', display: 'flex',
+                                                    alignItems: 'flex-start', gap: '10px',
+                                                    transition: 'background 0.1s',
+                                                }}
+                                                onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-light)')}
+                                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                            >
+                                                <MapPin size={14} color="var(--accent-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                                                <div>
+                                                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)', fontFamily: "'Inter', sans-serif" }}>
+                                                        {parts[0]}
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', color: 'var(--tg-theme-hint-color)', marginTop: '2px', fontFamily: "'Inter', sans-serif" }}>
+                                                        {parts.slice(1, 4).join(', ')}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
+
+                        {/* Interactive Map */}
+                        <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1.5px solid var(--border-color)', height: '220px', position: 'relative' }}>
+                            <MapContainer
+                                center={markerPos}
+                                zoom={15}
+                                style={{ height: '100%', width: '100%' }}
+                                zoomControl={false}
+                                attributionControl={false}
+                            >
+                                <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                                <DraggableMarker position={markerPos} onMove={handleMarkerMove} />
+                                {flyToPos && <FlyTo position={flyToPos} />}
+                            </MapContainer>
+
+                            {/* Map hint overlay */}
+                            <div style={{
+                                position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)',
+                                background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
+                                color: 'white', fontSize: '11px', fontWeight: 600,
+                                padding: '5px 12px', borderRadius: '20px', zIndex: 800,
+                                pointerEvents: 'none', whiteSpace: 'nowrap',
+                            }}>
+                                Нажмите или перетащите метку
+                            </div>
+                        </div>
+
+                        {/* Current address display */}
+                        {address && (
+                            <div style={{
+                                marginTop: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px',
+                                padding: '10px 12px', background: 'var(--accent-light)', borderRadius: '10px',
+                            }}>
+                                <MapPin size={14} color="var(--accent-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                                <span style={{ fontSize: '13px', color: 'var(--accent-color)', fontWeight: 600, lineHeight: 1.4 }}>
+                                    {address}
+                                </span>
+                            </div>
+                        )}
                     </div>
 
+                    {/* Submit */}
                     <button
                         type="submit"
                         className="tg-button"
                         disabled={!canSubmit}
                         style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
                     >
-                        <Send size={17} /> {isSubmitting ? 'Публикация...' : 'Опубликовать задание'}
+                        {isSubmitting
+                            ? <><Loader2 size={17} className="spin-anim" /> Публикация...</>
+                            : <><Send size={17} /> Опубликовать задание</>
+                        }
                     </button>
                 </form>
             </div>

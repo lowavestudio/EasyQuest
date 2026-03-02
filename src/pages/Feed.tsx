@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings2, Navigation, MapPin, Clock, Plus, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle } from 'lucide-react';
+import { Settings2, Navigation, MapPin, Clock, Plus, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Search, X } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -49,6 +49,7 @@ const Feed = () => {
     const { tasks, role, user, userLocation, setUserLocation, fetchTasks } = useAppStore();
     const [isLocating, setIsLocating] = useState(false);
     const [activeChip, setActiveChip] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetchTasks();
@@ -80,10 +81,14 @@ const Feed = () => {
         return { ...task, distanceValue: distance };
     }).filter(task => {
         if (role === 'executor' && task.customerId === user?.id) return false;
+        // text search
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            if (!task.title.toLowerCase().includes(q) && !task.description?.toLowerCase().includes(q)) return false;
+        }
         if (activeChip === 'all') return true;
         if (activeChip === 'near') return task.distanceValue !== null && task.distanceValue <= 5;
         if (activeChip === 'reward') return task.reward >= 80;
-        // category filter
         return task.category === activeChip;
     });
 
@@ -131,6 +136,37 @@ const Feed = () => {
                 <button className="filter-btn">
                     <Settings2 size={20} />
                 </button>
+            </div>
+
+            {/* Search Bar */}
+            <div style={{ padding: '0 16px 4px', position: 'relative' }}>
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    background: 'var(--card-bg)', border: '1.5px solid var(--border-color)',
+                    borderRadius: '14px', padding: '10px 14px',
+                    transition: 'border-color 0.18s',
+                }}>
+                    <Search size={16} color="var(--tg-theme-hint-color)" style={{ flexShrink: 0 }} />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        placeholder="Поиск заданий..."
+                        style={{
+                            flex: 1, border: 'none', background: 'transparent', outline: 'none',
+                            fontSize: '14px', color: 'var(--tg-theme-text-color)',
+                            fontFamily: "'Inter', sans-serif",
+                        }}
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex' }}
+                        >
+                            <X size={16} color="var(--tg-theme-hint-color)" />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Filter chips */}
@@ -240,8 +276,13 @@ const Feed = () => {
                                     </div>
                                     <div className="task-title">{task.title}</div>
                                     <div className="task-meta">
-                                        <span className="task-meta-item">
-                                            <MapPin size={13} /> {task.distanceValue !== undefined && task.distanceValue !== null ? `${task.distanceValue.toFixed(1)} км` : 'рядом'}
+                                        <span className="task-meta-item" style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            <MapPin size={13} />
+                                            {task.address
+                                                ? task.address
+                                                : task.distanceValue !== undefined && task.distanceValue !== null
+                                                    ? `${task.distanceValue.toFixed(1)} км`
+                                                    : 'рядом'}
                                         </span>
                                         <span className="task-meta-item">
                                             <Clock size={13} /> {task.timeAllowed || '15 мин'}

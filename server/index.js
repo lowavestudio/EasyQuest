@@ -160,6 +160,41 @@ app.get('/api/tasks/my/:userId', async (req, res) => {
     }
 });
 
+// GET leaderboard - top executors by completed tasks
+app.get('/api/leaderboard', async (req, res) => {
+    try {
+        const users = await prisma.user.findMany({
+            select: {
+                id: true,
+                firstName: true,
+                photoUrl: true,
+                rating: true,
+                reviewCount: true,
+                _count: {
+                    select: { executedTasks: { where: { status: 'completed' } } }
+                }
+            },
+            orderBy: [
+                { executedTasks: { _count: 'desc' } },
+                { rating: 'desc' }
+            ],
+            take: 20
+        });
+        const leaderboard = users.map((u, idx) => ({
+            rank: idx + 1,
+            id: u.id,
+            firstName: u.firstName,
+            photoUrl: u.photoUrl,
+            rating: u.rating,
+            reviewCount: u.reviewCount,
+            completedCount: u._count.executedTasks
+        }));
+        res.json(leaderboard);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // POST upload photo
 app.post('/api/upload', upload.single('photo'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -169,14 +204,14 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
 
 // POST create task
 app.post('/api/tasks', async (req, res) => {
-    const { title, description, reward, lat, lng, customerId, category } = req.body;
+    const { title, description, reward, lat, lng, customerId, category, address } = req.body;
     try {
         const result = await prisma.$transaction(async (tx) => {
             const user = await tx.user.findUnique({ where: { id: customerId } });
             if (!user || user.balance < reward) throw new Error('Insufficient balance');
 
             const task = await tx.task.create({
-                data: { title, description, reward, lat, lng, customerId, status: 'available', category: category || 'other' }
+                data: { title, description, reward, lat, lng, customerId, status: 'available', category: category || 'other', address: address || '' }
             });
 
             await tx.user.update({

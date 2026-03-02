@@ -1,29 +1,159 @@
+import { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { UserRound, ShieldCheck, Briefcase, ChevronRight, LogOut, Star } from 'lucide-react';
+import { UserRound, ShieldCheck, Briefcase, ChevronRight, LogOut, Star, Trophy, Medal } from 'lucide-react';
 import { TonConnectButton } from '@tonconnect/ui-react';
+
+interface LeaderboardEntry {
+    rank: number;
+    id: string;
+    firstName: string;
+    photoUrl?: string;
+    rating: number;
+    reviewCount: number;
+    completedCount: number;
+}
+
+const MEDAL_COLORS = ['#f59e0b', '#94a3b8', '#cd7c3e'];
 
 const Profile = () => {
     const { user, role, setRole, balance, tasks, logout, login } = useAppStore();
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+    const [showLeaderboard, setShowLeaderboard] = useState(false);
+    const [loadingLb, setLoadingLb] = useState(false);
 
     const completedCount = tasks.filter(t => t.status === 'completed').length;
     const activeCount = tasks.filter(t => t.status === 'accepted' || t.status === 'under_review').length;
+
+    const fetchLeaderboard = async () => {
+        if (leaderboard.length > 0) { setShowLeaderboard(true); return; }
+        setLoadingLb(true);
+        try {
+            const res = await fetch('/api/leaderboard');
+            const data = await res.json();
+            setLeaderboard(data);
+            setShowLeaderboard(true);
+        } catch {
+            setShowLeaderboard(true);
+        } finally {
+            setLoadingLb(false);
+        }
+    };
 
     return (
         <div className="page-container" style={{ padding: '0', alignItems: 'stretch', justifyContent: 'flex-start' }}>
             <div className="top-header">
                 <div className="top-header-title">Профиль</div>
+                <button
+                    className="filter-btn"
+                    onClick={fetchLeaderboard}
+                    title="Лидерборд"
+                    style={{ position: 'relative' }}
+                >
+                    <Trophy size={20} />
+                </button>
             </div>
+
+            {/* Leaderboard Panel */}
+            {showLeaderboard && (
+                <div style={{
+                    margin: '0 16px 12px',
+                    background: 'var(--card-bg)',
+                    borderRadius: '18px',
+                    border: '1px solid var(--border-color)',
+                    overflow: 'hidden',
+                    animation: 'fadeUp 0.25s ease',
+                }}>
+                    <div style={{
+                        padding: '14px 16px 10px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        borderBottom: '1px solid var(--border-color)',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 800, color: 'var(--tg-theme-text-color)' }}>
+                            <Trophy size={16} color="#f59e0b" /> Топ исполнителей
+                        </div>
+                        <button
+                            onClick={() => setShowLeaderboard(false)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--tg-theme-hint-color)', lineHeight: 1 }}
+                        >×</button>
+                    </div>
+
+                    {loadingLb ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--tg-theme-hint-color)', fontSize: '14px' }}>Загрузка...</div>
+                    ) : leaderboard.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--tg-theme-hint-color)', fontSize: '14px' }}>Пока нет данных</div>
+                    ) : (
+                        <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                            {leaderboard.map((entry, i) => {
+                                const isMe = entry.id === user?.id;
+                                const hasMedal = i < 3;
+                                return (
+                                    <div key={entry.id} style={{
+                                        display: 'flex', alignItems: 'center', gap: '12px',
+                                        padding: '10px 16px',
+                                        background: isMe ? 'var(--accent-light)' : 'transparent',
+                                        borderBottom: i < leaderboard.length - 1 ? '1px solid var(--border-color)' : 'none',
+                                    }}>
+                                        {/* Rank */}
+                                        <div style={{
+                                            width: '26px', textAlign: 'center', flexShrink: 0,
+                                            fontWeight: 800, fontSize: hasMedal ? '18px' : '13px',
+                                            color: hasMedal ? MEDAL_COLORS[i] : 'var(--tg-theme-hint-color)',
+                                        }}>
+                                            {hasMedal ? ['🥇', '🥈', '🥉'][i] : entry.rank}
+                                        </div>
+
+                                        {/* Avatar */}
+                                        {entry.photoUrl ? (
+                                            <img src={entry.photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                        ) : (
+                                            <div style={{
+                                                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                                                background: isMe ? 'var(--accent-color)' : 'var(--border-color)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '14px', fontWeight: 800, color: isMe ? 'white' : 'var(--tg-theme-hint-color)',
+                                            }}>
+                                                {entry.firstName?.charAt(0) || '?'}
+                                            </div>
+                                        )}
+
+                                        {/* Name + stats */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{
+                                                fontSize: '14px', fontWeight: 700,
+                                                color: isMe ? 'var(--accent-color)' : 'var(--tg-theme-text-color)',
+                                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                            }}>
+                                                {entry.firstName}{isMe ? ' (вы)' : ''}
+                                            </div>
+                                            <div style={{ fontSize: '12px', color: 'var(--tg-theme-hint-color)', display: 'flex', gap: '8px', marginTop: '2px' }}>
+                                                <span>⭐ {entry.rating?.toFixed(1)}</span>
+                                                <span>✓ {entry.completedCount} выполнено</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Badge */}
+                                        <div style={{
+                                            fontSize: '12px', fontWeight: 700, padding: '3px 8px', borderRadius: '8px',
+                                            background: hasMedal ? `${MEDAL_COLORS[i]}20` : 'var(--border-color)',
+                                            color: hasMedal ? MEDAL_COLORS[i] : 'var(--tg-theme-hint-color)',
+                                            flexShrink: 0,
+                                        }}>
+                                            {entry.completedCount} ★
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                 {/* User Card */}
                 <div className="detail-card" style={{ flexDirection: 'row', alignItems: 'center', gap: '16px', padding: '16px 20px' }}>
                     {user?.photoUrl ? (
-                        <img
-                            src={user.photoUrl}
-                            alt="Avatar"
-                            className="profile-avatar"
-                        />
+                        <img src={user.photoUrl} alt="Avatar" className="profile-avatar" />
                     ) : (
                         <div className="profile-avatar-placeholder">
                             {user?.firstName?.charAt(0) || 'U'}
@@ -70,17 +200,11 @@ const Profile = () => {
                         Исполнитель зарабатывает звёзды, выполняя задания. Заказчик создаёт задания.
                     </p>
                     <div className="role-toggle">
-                        <button
-                            onClick={() => setRole('executor')}
-                            className={`role-btn ${role === 'executor' ? 'active' : ''}`}
-                        >
+                        <button onClick={() => setRole('executor')} className={`role-btn ${role === 'executor' ? 'active' : ''}`}>
                             <UserRound size={16} />
                             Исполнитель
                         </button>
-                        <button
-                            onClick={() => setRole('customer')}
-                            className={`role-btn ${role === 'customer' ? 'active' : ''}`}
-                        >
+                        <button onClick={() => setRole('customer')} className={`role-btn ${role === 'customer' ? 'active' : ''}`}>
                             <Briefcase size={16} />
                             Заказчик
                         </button>

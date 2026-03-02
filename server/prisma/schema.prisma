@@ -38,6 +38,7 @@ model Task {
   // Geolocation
   lat         Float
   lng         Float
+  address     String   @default("")
   distance    String   @default("near you") 
   timeAllowed String   @default("15 mins")
   category    String   @default("other") // 'delivery', 'photo', 'help', 'it', 'promo', 'other'
