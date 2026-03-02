@@ -17,7 +17,7 @@ interface LeaderboardEntry {
 const MEDAL_COLORS = ['#f59e0b', '#94a3b8', '#cd7c3e'];
 
 const Profile = () => {
-    const { user, role, setRole, balance, tasks, logout, login } = useAppStore();
+    const { user, role, setRole, balance, tasks, logout } = useAppStore();
     const navigate = useNavigate();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -247,14 +247,7 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    {(!window.Telegram?.WebApp?.initData || !window.Telegram?.WebApp?.initDataUnsafe?.user) && (
-                        <div className="settings-row" onClick={() => login({ id: user?.id === 'demo123' ? 'demo456' : 'demo123', first_name: user?.id === 'demo123' ? 'Executor Test' : 'Browser User' })} style={{ cursor: 'pointer', borderTop: '1px dashed var(--border-color)' }}>
-                            <div className="settings-row-left">
-                                <span style={{ color: 'var(--accent-color)' }}>🔄</span>
-                                <span style={{ fontWeight: '600' }}>Сменить юзера (Тест)</span>
-                            </div>
-                        </div>
-                    )}
+
                 </div>
 
             </div>

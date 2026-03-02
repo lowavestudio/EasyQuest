@@ -7,6 +7,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { v2 as cloudinary } from 'cloudinary';
 
 dotenv.config();
 
@@ -16,28 +17,27 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const prisma = new PrismaClient();
 
-// Multer setup for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = 'uploads/';
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir);
-        }
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
+// Cloudinary config
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-const upload = multer({ storage });
+
+// Multer — memory storage (files go to Cloudinary, not disk)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Platform commission config
+const PLATFORM_COMMISSION = 0.10; // 10%
+const PLATFORM_WALLET = process.env.PLATFORM_WALLET || 'UQDnHFZgSQqGUqGpG9dClE26K1rZk-BRN8v9Yv8xz1RBeYgJ';
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const SUPPORT_BOT_TOKEN = process.env.SUPPORT_BOT_TOKEN;
 
-// Helper to send Telegram notifications
+// Helper to send Telegram notifications (main bot)
 async function sendNotification(chatId, message) {
     if (!BOT_TOKEN) {
         console.log(`[Notification Mock] to ${chatId}: ${message}`);
@@ -47,16 +47,113 @@ async function sendNotification(chatId, message) {
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: message,
-                parse_mode: 'HTML'
-            })
+            body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
         });
     } catch (err) {
         console.error('Failed to send Telegram notification:', err);
     }
 }
+
+// ─── Support Bot Auto-Responder ───────────────────────────────────────────────
+const SUPPORT_FAQ = [
+    {
+        keywords: ['stars', 'звезд', 'баланс', 'пополнить', 'купить', 'кошелек', 'кошелёк', 'ton'],
+        answer: `💰 <b>Stars и кошелёк</b>\n\nStars — это внутренняя валюта Easy Quest.\n\n• При регистрации вы получаете <b>150 Stars</b> бесплатно\n• Пополнить баланс можно через <b>Кошелёк → Купить Stars</b>, подключив TON-кошелёк\n• 1 Star ≈ 0.01 TON ≈ 0.45₽\n\nОткройте приложение: @easyquestwork_bot`
+    },
+    {
+        keywords: ['задание', 'задач', 'принять', 'найти', 'выполнить', 'задан'],
+        answer: `📋 <b>Как принять задание</b>\n\n1. Откройте <b>Лента</b> в приложении\n2. Нажмите на задание на карте или в списке\n3. Нажмите <b>«Принять задание»</b>\n4. Выполните его и загрузите фото\n5. После одобрения заказчиком Stars поступят на баланс\n\nОткройте приложение: @easyquestwork_bot`
+    },
+    {
+        keywords: ['создать', 'опублик', 'заказчик', 'разместить', 'новое задание'],
+        answer: `🛠 <b>Как создать задание (для заказчиков)</b>\n\n1. В Профиле переключитесь на роль <b>«Заказчик»</b>\n2. На Ленте нажмите кнопку <b>«+»</b> на карте\n3. Заполните: название, описание, адрес, вознаграждение\n4. Нажмите <b>«Опубликовать»</b>\n\nСтоимость блокируется с баланса и вернётся при отмене.\n\nОткройте приложение: @easyquestwork_bot`
+    },
+    {
+        keywords: ['фото', 'загрузить', 'отчет', 'отчёт', 'сдать', 'доказ'],
+        answer: `📸 <b>Как сдать задание</b>\n\n1. Выполните задание на месте\n2. Откройте задание в разделе <b>«Задания → Активные»</b>\n3. Нажмите <b>«Сдать задание»</b>\n4. Сделайте чёткое фото на месте выполнения\n5. Заказчик проверит и одобрит — Stars сразу придут вам\n\nОткройте приложение: @easyquestwork_bot`
+    },
+    {
+        keywords: ['рейтинг', 'отзыв', 'оценк', 'репутац'],
+        answer: `⭐ <b>Рейтинг и отзывы</b>\n\nВаш рейтинг (от 1.0 до 5.0★) формируется из оценок заказчиков после каждого выполненного задания.\n\nВысокий рейтинг = больше доверия = больше заданий.\n\nВсе отзывы видны в вашем профиле.\n\nОткройте приложение: @easyquestwork_bot`
+    },
+    {
+        keywords: ['верификац', 'подтвержд', 'значок', 'проверк личности'],
+        answer: `✅ <b>Верификация</b>\n\nВерификация подтверждает вашу личность и повышает доверие заказчиков. Верифицированные пользователи имеют приоритет на задания.\n\nФункция верификации в разработке и появится в ближайшем обновлении. Следите за новостями: @EasyQuestNews`
+    },
+    {
+        keywords: ['вывод', 'вывести', 'обмен', 'получить деньги', 'снять'],
+        answer: `💸 <b>Вывод Stars</b>\n\nВывод Stars в TON находится в разработке и появится в ближайшем обновлении.\n\nСледите за анонсами: @EasyQuestNews`
+    },
+    {
+        keywords: ['привет', 'здравствуй', 'hi', 'hello', 'хай', 'добрый', 'помог', 'помощь'],
+        answer: `👋 <b>Привет! Я бот поддержки Easy Quest.</b>\n\nЧем могу помочь? Напишите ваш вопрос — я отвечу на популярные темы:\n\n• Stars и баланс\n• Как принять задание\n• Как создать задание\n• Как сдать отчёт\n• Рейтинг и отзывы\n• Вывод средств\n\nЕсли я не смогу помочь — передам ваш вопрос команде!`
+    },
+];
+
+async function sendSupportMessage(chatId, text) {
+    if (!SUPPORT_BOT_TOKEN) return;
+    try {
+        await fetch(`https://api.telegram.org/bot${SUPPORT_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' })
+        });
+    } catch (err) {
+        console.error('[SupportBot] Send error:', err.message);
+    }
+}
+
+async function handleSupportUpdate(update) {
+    const msg = update.message || update.edited_message;
+    if (!msg || !msg.text) return;
+
+    const text = msg.text.toLowerCase();
+    const chatId = msg.chat.id;
+    const userName = msg.from?.first_name || 'Пользователь';
+
+    // Find matching FAQ entry
+    const match = SUPPORT_FAQ.find(entry =>
+        entry.keywords.some(kw => text.includes(kw))
+    );
+
+    if (match) {
+        await sendSupportMessage(chatId, match.answer);
+    } else {
+        // Unknown question — auto-reply + notify admin via main bot
+        await sendSupportMessage(chatId,
+            `🤔 Получил ваш вопрос! Команда Easy Quest ответит вам в ближайшее время.\n\nПока можете найти ответ в разделе <b>Помощь и FAQ</b> приложения:\n@easyquestwork_bot`
+        );
+        // Forward to admin (owner) via main bot if we know admin chat id
+        if (BOT_TOKEN && process.env.ADMIN_CHAT_ID) {
+            await sendNotification(process.env.ADMIN_CHAT_ID,
+                `📨 <b>Вопрос в поддержку от ${userName}</b> (id: ${chatId})\n\n<i>${msg.text}</i>\n\n<a href="tg://user?id=${chatId}">Ответить пользователю</a>`
+            );
+        }
+    }
+}
+
+// Start long-polling for support bot
+let supportBotOffset = 0;
+async function pollSupportBot() {
+    if (!SUPPORT_BOT_TOKEN) return;
+    try {
+        const res = await fetch(
+            `https://api.telegram.org/bot${SUPPORT_BOT_TOKEN}/getUpdates?offset=${supportBotOffset}&timeout=25&allowed_updates=["message"]`,
+            { signal: AbortSignal.timeout(30000) }
+        );
+        const data = await res.json();
+        if (data.ok && data.result.length > 0) {
+            for (const update of data.result) {
+                supportBotOffset = update.update_id + 1;
+                handleSupportUpdate(update).catch(console.error);
+            }
+        }
+    } catch (e) {
+        // timeout or network error — just retry
+    }
+    setTimeout(pollSupportBot, 1000);
+}
+
 
 // Auth / Login
 app.post('/api/auth/login', async (req, res) => {
@@ -195,14 +292,24 @@ app.get('/api/leaderboard', async (req, res) => {
     }
 });
 
-// POST upload photo
-app.post('/api/upload', upload.single('photo'), (req, res) => {
+// POST upload photo → Cloudinary
+app.post('/api/upload', upload.single('photo'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const fileUrl = `/uploads/${req.file.filename}`;
-    res.json({ url: fileUrl });
+    try {
+        const result = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                { folder: 'easy-quest', resource_type: 'image', quality: 'auto', fetch_format: 'auto' },
+                (error, result) => error ? reject(error) : resolve(result)
+            ).end(req.file.buffer);
+        });
+        res.json({ url: result.secure_url });
+    } catch (err) {
+        console.error('Cloudinary upload error:', err);
+        res.status(500).json({ error: 'Upload failed' });
+    }
 });
 
-// POST create task
+// POST create task (10% platform commission)
 app.post('/api/tasks', async (req, res) => {
     const { title, description, reward, lat, lng, customerId, category, address } = req.body;
     try {
@@ -210,10 +317,17 @@ app.post('/api/tasks', async (req, res) => {
             const user = await tx.user.findUnique({ where: { id: customerId } });
             if (!user || user.balance < reward) throw new Error('Insufficient balance');
 
+            const commission = Math.ceil(reward * PLATFORM_COMMISSION); // 10% rounded up
+            const executorReward = reward - commission;
+
             const task = await tx.task.create({
-                data: { title, description, reward, lat, lng, customerId, status: 'available', category: category || 'other', address: address || '' }
+                data: {
+                    title, description, reward: executorReward, lat, lng, customerId,
+                    status: 'available', category: category || 'other', address: address || ''
+                }
             });
 
+            // Deduct full amount from customer
             await tx.user.update({
                 where: { id: customerId },
                 data: { balance: { decrement: reward } }
@@ -222,6 +336,9 @@ app.post('/api/tasks', async (req, res) => {
             await tx.transaction.create({
                 data: { title: `Создание: ${title}`, amount: -reward, type: 'spend', userId: customerId }
             });
+
+            // Log platform commission (informational)
+            console.log(`[Commission] Task #${task.id}: ${commission}★ → ${PLATFORM_WALLET}`);
 
             return task;
         });
@@ -449,4 +566,8 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Backend running on port ${PORT}`);
+    pollSupportBot();
+    console.log('[SupportBot] Auto-responder started for @EasyQuestSupportBot');
+});
