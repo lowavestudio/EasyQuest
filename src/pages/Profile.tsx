@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { UserRound, ShieldCheck, Briefcase, ChevronRight, LogOut, Star, Trophy, Medal } from 'lucide-react';
+import { UserRound, ShieldCheck, Briefcase, ChevronRight, LogOut, Star, Trophy, HelpCircle } from 'lucide-react';
 import { TonConnectButton } from '@tonconnect/ui-react';
 
 interface LeaderboardEntry {
@@ -17,6 +18,7 @@ const MEDAL_COLORS = ['#f59e0b', '#94a3b8', '#cd7c3e'];
 
 const Profile = () => {
     const { user, role, setRole, balance, tasks, logout, login } = useAppStore();
+    const navigate = useNavigate();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [loadingLb, setLoadingLb] = useState(false);
@@ -220,10 +222,17 @@ const Profile = () => {
                         </div>
                         <TonConnectButton />
                     </div>
-                    <div className="settings-row">
+                    <div className="settings-row" onClick={() => navigate('/faq')} style={{ cursor: 'pointer' }}>
                         <div className="settings-row-left">
                             <ShieldCheck size={18} color="var(--tg-theme-hint-color)" />
                             <span style={{ fontWeight: '600' }}>Верификация</span>
+                        </div>
+                        <ChevronRight size={18} color="var(--tg-theme-hint-color)" />
+                    </div>
+                    <div className="settings-row" onClick={() => navigate('/faq')} style={{ cursor: 'pointer' }}>
+                        <div className="settings-row-left">
+                            <HelpCircle size={18} color="var(--tg-theme-hint-color)" />
+                            <span style={{ fontWeight: '600' }}>Помощь и FAQ</span>
                         </div>
                         <ChevronRight size={18} color="var(--tg-theme-hint-color)" />
                     </div>

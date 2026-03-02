@@ -9,6 +9,7 @@ import MyTasks from './pages/MyTasks';
 import TaskDetails from './pages/TaskDetails';
 import CreateTask from './pages/CreateTask';
 import Chat from './pages/Chat';
+import FAQ from './pages/FAQ';
 import { useAppStore } from './store/useAppStore';
 import ToastContainer from './components/ToastContainer';
 
@@ -84,6 +85,7 @@ function App() {
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/create-task" element={<CreateTask />} />
+              <Route path="/faq" element={<FAQ />} />
             </Routes>
           </main>
           <BottomNav />
