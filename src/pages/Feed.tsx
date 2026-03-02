@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings2, Navigation, MapPin, Clock, Plus } from 'lucide-react';
+import { Settings2, Navigation, MapPin, Clock, Plus, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -24,13 +24,31 @@ function MapFlyTo({ position }: { position: [number, number] | null }) {
     return null;
 }
 
-const FILTER_CHIPS = ['Все', 'Рядом', 'Экпресс', 'Высокая награда', 'Быстрое'];
+export const CATEGORY_META: Record<string, { label: string; color: string; bg: string; Icon: any }> = {
+    delivery: { label: 'Доставка', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', Icon: Truck },
+    photo: { label: 'Фото/Видео', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', Icon: Camera },
+    help: { label: 'Помощь', color: '#ef4444', bg: 'rgba(239,68,68,0.12)', Icon: Heart },
+    it: { label: 'IT', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', Icon: Monitor },
+    promo: { label: 'Промо', color: '#10b981', bg: 'rgba(16,185,129,0.12)', Icon: Megaphone },
+    other: { label: 'Другое', color: '#64748b', bg: 'rgba(100,116,139,0.12)', Icon: HelpCircle },
+};
+
+const FILTER_CHIPS = [
+    { id: 'all', label: 'Все' },
+    { id: 'near', label: 'Рядом' },
+    { id: 'delivery', label: 'Доставка' },
+    { id: 'photo', label: 'Фото/Видео' },
+    { id: 'help', label: 'Помощь' },
+    { id: 'it', label: 'IT' },
+    { id: 'promo', label: 'Промо' },
+    { id: 'reward', label: 'Высокая награда' },
+];
 
 const Feed = () => {
     const navigate = useNavigate();
     const { tasks, role, user, userLocation, setUserLocation, fetchTasks } = useAppStore();
     const [isLocating, setIsLocating] = useState(false);
-    const [activeChip, setActiveChip] = useState('Все');
+    const [activeChip, setActiveChip] = useState('all');
 
     useEffect(() => {
         fetchTasks();
@@ -39,9 +57,9 @@ const Feed = () => {
         }
     }, [fetchTasks]);
 
-    // Haversine formula to calculate distance in km
+    // Haversine formula
     const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371; // Radius of the earth in km
+        const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a =
@@ -54,7 +72,6 @@ const Feed = () => {
 
     const centerPosition: [number, number] = [51.505, -0.09];
 
-    // Simple client-side filter
     const filteredTasks = (tasks || []).map(task => {
         let distance = null;
         if (userLocation) {
@@ -62,15 +79,12 @@ const Feed = () => {
         }
         return { ...task, distanceValue: distance };
     }).filter(task => {
-        // Don't show your own tasks in the feed when looking for work
         if (role === 'executor' && task.customerId === user?.id) return false;
-
-        if (activeChip === 'Все') return true;
-        if (activeChip === 'Рядом') {
-            return task.distanceValue !== null && task.distanceValue <= 5; // Within 5km
-        }
-        if (activeChip === 'Высокая награда') return task.reward >= 80;
-        return true;
+        if (activeChip === 'all') return true;
+        if (activeChip === 'near') return task.distanceValue !== null && task.distanceValue <= 5;
+        if (activeChip === 'reward') return task.reward >= 80;
+        // category filter
+        return task.category === activeChip;
     });
 
     const createCustomIcon = (reward: number) => {
@@ -123,11 +137,11 @@ const Feed = () => {
             <div className="chips-row">
                 {FILTER_CHIPS.map(chip => (
                     <button
-                        key={chip}
-                        className={`chip ${activeChip === chip ? 'active' : ''}`}
-                        onClick={() => setActiveChip(chip)}
+                        key={chip.id}
+                        className={`chip ${activeChip === chip.id ? 'active' : ''}`}
+                        onClick={() => setActiveChip(chip.id)}
                     >
-                        {chip}
+                        {chip.label}
                     </button>
                 ))}
             </div>
@@ -191,31 +205,58 @@ const Feed = () => {
             </div>
 
             <div className="task-feed" style={{ padding: '0 16px 16px' }}>
-                {filteredTasks.map((task, i) => (
-                    <div
-                        key={task.id}
-                        className="task-card fade-up"
-                        style={{ animationDelay: `${i * 0.05}s` }}
-                        onClick={() => navigate(`/task/${task.id}`)}
-                    >
-                        <div className="task-info">
-                            <div className="task-title">{task.title}</div>
-                            <div className="task-meta">
-                                <span className="task-meta-item">
-                                    <MapPin size={13} /> {task.distanceValue !== undefined && task.distanceValue !== null ? `${task.distanceValue.toFixed(1)} км` : 'рядом'}
-                                </span>
-                                <span className="task-meta-item">
-                                    <Clock size={13} /> {task.timeAllowed || '15 мин'}
-                                </span>
-                            </div>
+                {filteredTasks.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="empty-state-icon">
+                            <MapPin size={28} />
                         </div>
-                        <div className="task-reward-box">
-                            <div className="reward-badge">
-                                {task.reward} <span>★</span>
-                            </div>
+                        <div className="empty-state-title">Заданий нет</div>
+                        <div className="empty-state-text">
+                            По выбранному фильтру пока нет доступных заданий
                         </div>
                     </div>
-                ))}
+                ) : (
+                    filteredTasks.map((task, i) => {
+                        const catMeta = CATEGORY_META[task.category || 'other'] || CATEGORY_META.other;
+                        const CatIcon = catMeta.Icon;
+                        return (
+                            <div
+                                key={task.id}
+                                className="task-card fade-up"
+                                style={{ animationDelay: `${i * 0.05}s` }}
+                                onClick={() => navigate(`/task/${task.id}`)}
+                            >
+                                <div className="task-info">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                                        <span style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                            fontSize: '10px', fontWeight: 700, letterSpacing: '0.4px',
+                                            padding: '3px 8px', borderRadius: '6px',
+                                            background: catMeta.bg, color: catMeta.color,
+                                        }}>
+                                            <CatIcon size={10} />
+                                            {catMeta.label}
+                                        </span>
+                                    </div>
+                                    <div className="task-title">{task.title}</div>
+                                    <div className="task-meta">
+                                        <span className="task-meta-item">
+                                            <MapPin size={13} /> {task.distanceValue !== undefined && task.distanceValue !== null ? `${task.distanceValue.toFixed(1)} км` : 'рядом'}
+                                        </span>
+                                        <span className="task-meta-item">
+                                            <Clock size={13} /> {task.timeAllowed || '15 мин'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="task-reward-box">
+                                    <div className="reward-badge">
+                                        {task.reward} <span>★</span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
             </div>
         </div>
     );

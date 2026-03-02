@@ -169,14 +169,14 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
 
 // POST create task
 app.post('/api/tasks', async (req, res) => {
-    const { title, description, reward, lat, lng, customerId } = req.body;
+    const { title, description, reward, lat, lng, customerId, category } = req.body;
     try {
         const result = await prisma.$transaction(async (tx) => {
             const user = await tx.user.findUnique({ where: { id: customerId } });
             if (!user || user.balance < reward) throw new Error('Insufficient balance');
 
             const task = await tx.task.create({
-                data: { title, description, reward, lat, lng, customerId, status: 'available' }
+                data: { title, description, reward, lat, lng, customerId, status: 'available', category: category || 'other' }
             });
 
             await tx.user.update({
