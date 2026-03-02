@@ -1,0 +1,21 @@
+{
+    "name": "Easy Quest",
+    "short_name": "EasyQuest",
+    "description": "Зарабатывай на квестах и заданиях рядом с тобой",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f0f4ff",
+    "theme_color": "#3b82f6",
+    "icons": [
+        {
+            "src": "/vite.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "/vite.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml"
+        }
+    ]
+}

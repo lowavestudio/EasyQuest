@@ -1,7 +1,7 @@
 {
-    "url": "https://easy-quest.app",
+    "url": "https://easy-quest.onrender.com",
     "name": "Easy Quest",
-    "iconUrl": "https://easy-quest.app/icon.png",
-    "termsOfUseUrl": "https://easy-quest.app/terms",
-    "privacyPolicyUrl": "https://easy-quest.app/privacy"
+    "iconUrl": "https://easy-quest.onrender.com/vite.svg",
+    "termsOfUseUrl": "https://easy-quest.onrender.com/terms",
+    "privacyPolicyUrl": "https://easy-quest.onrender.com/privacy"
 }
