@@ -110,8 +110,14 @@ const CreateTask = () => {
     const [showResults, setShowResults] = useState(false);
     const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Payment Type
+    const [paymentType, setPaymentType] = useState<'stars' | 'cash'>('stars');
+    const [cashAmount, setCashAmount] = useState('');
+
     const rewardNum = Number(reward) || 0;
-    const canSubmit = title.trim() && description.trim() && rewardNum > 0 && rewardNum <= balance && !isSubmitting;
+    const isCash = paymentType === 'cash';
+    const cost = isCash ? 20 : Math.max(rewardNum, 1);
+    const canSubmit = title.trim() && description.trim() && (isCash ? cashAmount.trim() : rewardNum > 0) && cost <= balance && !isSubmitting;
 
     // Reverse geocode when marker moves
     const reverseGeocode = useCallback(async (lat: number, lng: number) => {
@@ -190,6 +196,8 @@ const CreateTask = () => {
             lng: markerPos[1],
             category,
             address: address || undefined,
+            paymentType,
+            cashAmount: isCash ? cashAmount.trim() : undefined,
         });
 
         if (window.Telegram?.WebApp?.HapticFeedback) {
@@ -269,23 +277,81 @@ const CreateTask = () => {
                         />
                     </div>
 
-                    {/* Reward */}
+                    {/* Payment Type */}
                     <div className="form-group">
-                        <label className="form-label">{ctT.reward} ({commonT.stars})</label>
-                        <input
-                            type="number"
-                            className="form-input"
-                            value={reward}
-                            onChange={e => setReward(e.target.value)}
-                            min={1}
-                            disabled={isSubmitting}
-                        />
-                        {rewardNum > balance && (
-                            <span style={{ fontSize: '12px', color: 'var(--danger-color)', fontWeight: '600' }}>
-                                {language === 'ru' ? `Недостаточно средств (баланс: ${balance} ★)` : `Insufficient funds (balance: ${balance} ★)`}
-                            </span>
-                        )}
+                        <label className="form-label">{ctT.payment_type}</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                type="button"
+                                onClick={() => setPaymentType('stars')}
+                                style={{
+                                    flex: 1, padding: '12px', borderRadius: '12px',
+                                    border: `2px solid ${paymentType === 'stars' ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                                    background: paymentType === 'stars' ? 'var(--accent-light)' : 'var(--card-bg)',
+                                    color: paymentType === 'stars' ? 'var(--accent-color)' : 'var(--tg-theme-text-color)',
+                                    fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                                }}
+                            >
+                                ★ {ctT.payment_stars}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPaymentType('cash')}
+                                style={{
+                                    flex: 1, padding: '12px', borderRadius: '12px',
+                                    border: `2px solid ${paymentType === 'cash' ? '#10b981' : 'var(--border-color)'}`,
+                                    background: paymentType === 'cash' ? 'rgba(16, 185, 129, 0.1)' : 'var(--card-bg)',
+                                    color: paymentType === 'cash' ? '#10b981' : 'var(--tg-theme-text-color)',
+                                    fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                                }}
+                            >
+                                💵 {ctT.payment_cash}
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Reward */}
+                    {paymentType === 'stars' ? (
+                        <div className="form-group">
+                            <label className="form-label">{ctT.reward} ({commonT.stars})</label>
+                            <input
+                                type="number"
+                                className="form-input"
+                                value={reward}
+                                onChange={e => setReward(e.target.value)}
+                                min={1}
+                                disabled={isSubmitting}
+                            />
+                            {rewardNum > balance && (
+                                <span style={{ fontSize: '12px', color: 'var(--danger-color)', fontWeight: '600' }}>
+                                    {ctT.insufficient_funds} ({balance} ★)
+                                </span>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="form-group" style={{ background: 'rgba(16, 185, 129, 0.05)', padding: '12px', borderRadius: '14px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                            <label className="form-label" style={{ color: '#059669' }}>{ctT.cash_amount_label} 💵</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={cashAmount}
+                                onChange={e => setCashAmount(e.target.value)}
+                                placeholder={ctT.placeholders.cash}
+                                disabled={isSubmitting}
+                                style={{ borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                            />
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--tg-theme-hint-color)' }}>
+                                    {ctT.commission_fee}
+                                </span>
+                                {cost > balance && (
+                                    <span style={{ fontSize: '12px', color: 'var(--danger-color)', fontWeight: '600' }}>
+                                        {ctT.insufficient_funds} ({balance} ★)
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Location Section */}
                     <div className="form-group">
@@ -384,7 +450,7 @@ const CreateTask = () => {
                                 padding: '5px 12px', borderRadius: '20px', zIndex: 800,
                                 pointerEvents: 'none', whiteSpace: 'nowrap',
                             }}>
-                                {language === 'ru' ? 'Нажмите или перетащите метку' : 'Click or drag the marker'}
+                                {ctT.map_hint}
                             </div>
                         </div>
 

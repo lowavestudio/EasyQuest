@@ -59,6 +59,10 @@ model Task {
   timeAllowed String   @default("15 mins")
   category    String   @default("other") // 'delivery', 'photo', 'help', 'it', 'promo', 'other'
 
+  // Payment
+  paymentType String   @default("stars") // 'stars' | 'cash'
+  cashAmount  String?  // e.g. '1000 RUB'
+
   // Relations
   customerId  String
   customer    User     @relation("CustomerTasks", fields: [customerId], references: [id])

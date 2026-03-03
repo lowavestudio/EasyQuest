@@ -277,11 +277,11 @@ const Wallet = () => {
                                 </button>
                             </div>
 
-                            {user && user.tasksCompleted < 3 ? (
+                            {user && user.tasksCompleted < 0 ? (
                                 <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '14px', color: '#ef4444', fontSize: '14px', lineHeight: 1.5 }}>
                                     {walletT.withdraw_modal.min_tasks} {language === 'ru' ? 'Вы выполнили:' : 'You completed:'} {user.tasksCompleted}.
                                 </div>
-                            ) : user && user.earnedBalance < 500 ? (
+                            ) : user && user.earnedBalance < 10 ? (
                                 <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '14px', color: '#ef4444', fontSize: '14px', lineHeight: 1.5 }}>
                                     {walletT.withdraw_modal.min_amount} {language === 'ru' ? 'У вас:' : 'You have:'} {user.earnedBalance} {commonT.stars}.
                                 </div>

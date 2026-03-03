@@ -296,9 +296,15 @@ const Feed = () => {
                                     </div>
                                 </div>
                                 <div className="task-reward-box">
-                                    <div className="reward-badge">
-                                        {task.reward} <span>★</span>
-                                    </div>
+                                    {task.paymentType === 'cash' ? (
+                                        <div className="reward-badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                            {task.cashAmount} <span>💵</span>
+                                        </div>
+                                    ) : (
+                                        <div className="reward-badge">
+                                            {task.reward} <span>★</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );

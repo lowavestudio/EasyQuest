@@ -233,9 +233,15 @@ const MyTasks = () => {
                                                 </button>
                                             </>
                                         ) : (
-                                            <div className="reward-badge" style={{ fontSize: '13px' }}>
-                                                +{task.reward} ★
-                                            </div>
+                                            task.paymentType === 'cash' ? (
+                                                <div className="reward-badge" style={{ fontSize: '13px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                    {task.cashAmount} 💵
+                                                </div>
+                                            ) : (
+                                                <div className="reward-badge" style={{ fontSize: '13px' }}>
+                                                    +{task.reward} ★
+                                                </div>
+                                            )
                                         )}
                                     </div>
                                 </div>
@@ -298,13 +304,24 @@ const MyTasks = () => {
                                         </div>
                                     </div>
                                     <div className="task-reward-box">
-                                        <div className="reward-badge" style={{
-                                            background: isCompleted ? 'var(--success-bg)' : 'var(--border-color)',
-                                            color: isCompleted ? 'var(--success-color)' : 'var(--tg-theme-hint-color)',
-                                            fontSize: '14px'
-                                        }}>
-                                            {isCompleted && !isCustomer ? '+' : ''}{isCustomer ? '-' : ''}{task.reward} ★
-                                        </div>
+                                        {task.paymentType === 'cash' ? (
+                                            <div className="reward-badge" style={{
+                                                background: isCompleted ? 'rgba(16, 185, 129, 0.1)' : 'var(--border-color)',
+                                                color: isCompleted ? '#059669' : 'var(--tg-theme-hint-color)',
+                                                fontSize: '14px',
+                                                border: isCompleted ? '1px solid rgba(16, 185, 129, 0.2)' : 'none'
+                                            }}>
+                                                {isCompleted ? '' : ''}{task.cashAmount} 💵
+                                            </div>
+                                        ) : (
+                                            <div className="reward-badge" style={{
+                                                background: isCompleted ? 'var(--success-bg)' : 'var(--border-color)',
+                                                color: isCompleted ? 'var(--success-color)' : 'var(--tg-theme-hint-color)',
+                                                fontSize: '14px'
+                                            }}>
+                                                {isCompleted && !isCustomer ? '+' : ''}{isCustomer && isCompleted ? '-' : ''}{task.reward} ★
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );

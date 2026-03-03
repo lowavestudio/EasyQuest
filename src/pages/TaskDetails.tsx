@@ -62,9 +62,9 @@ const TaskDetails = () => {
             <div className="page-container">
                 <div className="empty-state">
                     <div className="empty-state-icon"><Info size={28} /></div>
-                    <div className="empty-state-title">{language === 'ru' ? 'Задание не найдено' : 'Task not found'}</div>
+                    <div className="empty-state-title">{tdT.not_found}</div>
                     <button className="tg-button" style={{ marginTop: '12px', width: 'auto', padding: '12px 28px' }} onClick={() => navigate('/feed')}>
-                        {language === 'ru' ? 'К ленте' : 'To feed'}
+                        {tdT.to_feed}
                     </button>
                 </div>
             </div>
@@ -180,7 +180,13 @@ const TaskDetails = () => {
 
                     <div className="d-reward-big">
                         <span className="reward-label">{tdT.reward_label}</span>
-                        <div className="reward-amount">{task.reward} <span>★</span></div>
+                        {task.paymentType === 'cash' ? (
+                            <div className="reward-amount" style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {task.cashAmount} <span>💵</span>
+                            </div>
+                        ) : (
+                            <div className="reward-amount">{task.reward} <span>★</span></div>
+                        )}
                     </div>
                 </div>
 
@@ -395,8 +401,8 @@ const TaskDetails = () => {
             )}
 
             <ReviewModal open={showReviewModal} taskTitle={task.title} onClose={() => setShowReviewModal(false)} onConfirm={handleApprove} />
-            <ConfirmModal open={showAbandonModal} title={tdT.actions.abandon + "?"} message={language === 'ru' ? "Задание вернётся в ленту. Это не повлияет на ваш рейтинг." : "Task will return to the feed. This won't affect your rating."} confirmText={language === 'ru' ? "Да, отказаться" : "Yes, abandon"} cancelText={language === 'ru' ? "Нет, продолжить" : "No, continue"} danger onConfirm={handleAbandon} onCancel={() => setShowAbandonModal(false)} />
-            <ConfirmModal open={showCancelModal} title={tdT.actions.cancel + "?"} message={language === 'ru' ? `Задание будет снято с публикации. ${task.reward} ★ вернутся на ваш баланс.` : `Task will be unpublished. ${task.reward} ★ will be returned to your balance.`} confirmText={language === 'ru' ? "Да, отменить" : "Yes, cancel"} cancelText={language === 'ru' ? "Нет, оставить" : "No, keep"} danger onConfirm={handleCancelOwn} onCancel={() => setShowCancelModal(false)} />
+            <ConfirmModal open={showAbandonModal} title={tdT.actions.abandon + "?"} message={tdT.modals.abandon_msg} confirmText={tdT.modals.abandon_confirm} cancelText={tdT.modals.cancel} danger onConfirm={handleAbandon} onCancel={() => setShowAbandonModal(false)} />
+            <ConfirmModal open={showCancelModal} title={tdT.actions.cancel + "?"} message={tdT.modals.cancel_own_msg_1 + task.reward + tdT.modals.cancel_own_msg_2} confirmText={tdT.modals.cancel_own_confirm} cancelText={tdT.modals.keep} danger onConfirm={handleCancelOwn} onCancel={() => setShowCancelModal(false)} />
         </div>
     );
 };

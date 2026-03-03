@@ -89,11 +89,19 @@ export const translations = {
             reward: 'Награда',
             location: 'Место выполнения',
             publish_btn: 'Опубликовать задание',
+            insufficient_funds: 'Недостаточно средств',
+            map_hint: 'Нажмите или перетащите метку',
             placeholders: {
                 title: 'Например: Аудит витрины магазина',
                 description: 'Что должен сделать исполнитель?',
-                address: 'Поиск адреса...'
-            }
+                address: 'Поиск адреса...',
+                cash: 'Например, 1000 RUB'
+            },
+            payment_type: 'Тип оплаты',
+            payment_stars: 'Через приложение (Stars)',
+            payment_cash: 'Наличные (или на карту)',
+            cash_amount_label: 'Сумма в рублях/валюте',
+            commission_fee: 'Комиссия за публикацию: 20 Stars'
         },
         task_details: {
             title: 'Детали задания',
@@ -102,6 +110,8 @@ export const translations = {
             requirements_title: 'Требования',
             customer_title: 'Заказчик',
             report_title: 'Отчёт исполнителя',
+            not_found: 'Задание не найдено',
+            to_feed: 'К ленте',
             status: {
                 cancelled: 'Отменено',
                 reviewing: 'На проверке',
@@ -120,6 +130,15 @@ export const translations = {
                 cancelling: 'Отмена...',
                 approve: 'Принять и оплатить',
                 approving: 'Завершение...'
+            },
+            modals: {
+                abandon_msg: 'Задание вернётся в ленту. Это не повлияет на ваш рейтинг.',
+                abandon_confirm: 'Да, отказаться',
+                cancel: 'Нет, продолжить',
+                cancel_own_msg_1: 'Задание будет снято с публикации. ',
+                cancel_own_msg_2: ' ★ вернутся на ваш баланс.',
+                cancel_own_confirm: 'Да, отменить',
+                keep: 'Нет, оставить'
             },
             warnings: {
                 accept: 'Принимая задание, вы соглашаетесь выполнить его в установленный срок.',
@@ -285,11 +304,19 @@ export const translations = {
             reward: 'Reward',
             location: 'Execution place',
             publish_btn: 'Publish Task',
+            insufficient_funds: 'Insufficient funds',
+            map_hint: 'Click or drag the marker',
             placeholders: {
                 title: 'Example: Store window audit',
                 description: 'What should the executor do?',
-                address: 'Search address...'
-            }
+                address: 'Search address...',
+                cash: 'For example, $50'
+            },
+            payment_type: 'Payment Type',
+            payment_stars: 'In-app (Stars)',
+            payment_cash: 'Cash (or Card transfer)',
+            cash_amount_label: 'Amount in Cash/Card',
+            commission_fee: 'Publishing fee: 20 Stars'
         },
         task_details: {
             title: 'Task Details',
@@ -298,6 +325,8 @@ export const translations = {
             requirements_title: 'Requirements',
             customer_title: 'Customer',
             report_title: 'Executor Report',
+            not_found: 'Task not found',
+            to_feed: 'To feed',
             status: {
                 cancelled: 'Cancelled',
                 reviewing: 'Reviewing',
@@ -316,6 +345,15 @@ export const translations = {
                 cancelling: 'Cancelling...',
                 approve: 'Approve and Pay',
                 approving: 'Finishing...'
+            },
+            modals: {
+                abandon_msg: 'Task will return to the feed. This won\'t affect your rating.',
+                abandon_confirm: 'Yes, abandon',
+                cancel: 'No, continue',
+                cancel_own_msg_1: 'Task will be unpublished. ',
+                cancel_own_msg_2: ' ★ will be returned to your balance.',
+                cancel_own_confirm: 'Yes, cancel',
+                keep: 'No, keep'
             },
             warnings: {
                 accept: 'By accepting the task, you agree to complete it within the specified timeframe.',
