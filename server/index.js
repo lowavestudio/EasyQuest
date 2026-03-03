@@ -218,7 +218,7 @@ async function handleMainBotCommand(update) {
     if (text.startsWith('/start')) {
         const keyboard = {
             inline_keyboard: [[
-                { text: "🚀 Запустить Easy Quest", web_app: { url: "https://easy-quest.onrender.com" } }
+                { text: "🚀 Запустить Easy Quest", web_app: { url: "https://easyquesteasy-quest.onrender.com" } }
             ]]
         };
         try {
@@ -623,10 +623,18 @@ app.post('/api/tasks', async (req, res) => {
                 }
             });
 
+            // Calculate exact deduction: prioritize spending bonus balance first!
+            const deductFromBonus = Math.min(user.bonusBalance, reward);
+            const deductFromEarned = reward - deductFromBonus;
+
             // Deduct full amount from customer
             await tx.user.update({
                 where: { id: customerId },
-                data: { balance: { decrement: reward } }
+                data: {
+                    balance: { decrement: reward },
+                    bonusBalance: { decrement: deductFromBonus },
+                    earnedBalance: { decrement: deductFromEarned }
+                }
             });
 
             await tx.transaction.create({
@@ -865,8 +873,15 @@ app.delete('/api/tasks/:id', async (req, res) => {
                 throw new Error('Cannot cancel active or completed task');
             }
             await tx.task.update({ where: { id: task.id }, data: { status: 'cancelled' } });
-            await tx.user.update({ where: { id: task.customerId }, data: { balance: { increment: task.reward } } });
-            await tx.transaction.create({ data: { title: `Отмена: ${task.title}`, amount: task.reward, type: 'refund', userId: task.customerId } });
+            // Refund the task.reward to bonusBalance to prevent converting bonus to earned via cancel
+            await tx.user.update({
+                where: { id: task.customerId },
+                data: {
+                    balance: { increment: task.reward },
+                    bonusBalance: { increment: task.reward }
+                }
+            });
+            await tx.transaction.create({ data: { title: `Возврат: ${task.title}`, amount: task.reward, type: 'refund', userId: task.customerId } });
             return { success: true };
         });
         res.json(result);
