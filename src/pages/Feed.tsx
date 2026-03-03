@@ -46,7 +46,7 @@ const FILTER_CHIPS = [
 
 const Feed = () => {
     const navigate = useNavigate();
-    const { tasks, role, user, userLocation, setUserLocation, fetchTasks } = useAppStore();
+    const { tasks, role, user, userLocation, setUserLocation, fetchTasks, notify } = useAppStore();
     const [isLocating, setIsLocating] = useState(false);
     const [activeChip, setActiveChip] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -133,7 +133,10 @@ const Feed = () => {
                     </div>
                     Лента заданий
                 </div>
-                <button className="filter-btn">
+                <button
+                    className="filter-btn"
+                    onClick={() => notify('Расширенные фильтры будут доступны в следующем обновлении!', 'info')}
+                >
                     <Settings2 size={20} />
                 </button>
             </div>

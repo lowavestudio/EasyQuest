@@ -470,10 +470,10 @@ app.post('/api/user/:id/buy-stars', async (req, res) => {
     if (!BOT_TOKEN) return res.status(500).json({ error: 'Bot not configured' });
 
     const packages = {
+        10: { label: '10 Stars', price: 10 },
+        50: { label: '50 Stars', price: 50 },
         100: { label: '100 Stars', price: 100 },
-        250: { label: '250 Stars (+25 бонус)', price: 250 },
-        500: { label: '500 Stars (+75 бонус)', price: 500 },
-        1000: { label: '1000 Stars (+200 бонус)', price: 1000 },
+        250: { label: '250 Stars', price: 250 },
     };
 
     const pkg = packages[stars];
@@ -564,11 +564,11 @@ app.get('/api/leaderboard', async (req, res) => {
                 rating: true,
                 reviewCount: true,
                 _count: {
-                    select: { executedTasks: { where: { status: 'completed' } } }
+                    select: { tasksAccepted: { where: { status: 'completed' } } }
                 }
             },
             orderBy: [
-                { executedTasks: { _count: 'desc' } },
+                { tasksAccepted: { _count: 'desc' } },
                 { rating: 'desc' }
             ],
             take: 20
@@ -580,7 +580,7 @@ app.get('/api/leaderboard', async (req, res) => {
             photoUrl: u.photoUrl,
             rating: u.rating,
             reviewCount: u.reviewCount,
-            completedCount: u._count.executedTasks
+            completedCount: u._count.tasksAccepted
         }));
         res.json(leaderboard);
     } catch (err) {
