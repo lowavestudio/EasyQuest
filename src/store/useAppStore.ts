@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { translations } from '../translations';
+import type { Language } from '../translations';
 
 const API_URL = '/api';
 
@@ -114,6 +116,11 @@ interface AppState {
     // Notifications actions
     notify: (message: string, type?: AppNotification['type']) => void;
     dismissNotification: (id: number) => void;
+
+    // Translation
+    language: Language;
+    setLanguage: (lang: Language) => void;
+    t: (path: string) => any;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -126,6 +133,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     messages: [],
     unreadCount: 0,
     userLocation: null,
+    language: 'ru',
+
+    setLanguage: (lang) => set({ language: lang }),
+
+    t: (path) => {
+        const lang = get().language;
+        const keys = path.split('.');
+        let result: any = translations[lang];
+        for (const key of keys) {
+            if (result && result[key]) {
+                result = result[key];
+            } else {
+                return path; // fallback to path string if not found
+            }
+        }
+        return result;
+    },
 
     notify: (message, type = 'info') => {
         const id = Date.now();

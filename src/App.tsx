@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
+import { translations } from './translations';
+import type { Language } from './translations';
 import Feed from './pages/Feed';
 import BottomNav from './components/BottomNav';
 import Wallet from './pages/Wallet';
@@ -26,7 +28,7 @@ declare global {
 }
 
 function App() {
-  const { user, login } = useAppStore();
+  const { user, login, setLanguage } = useAppStore();
   const [init, setInit] = useState(false);
 
   useEffect(() => {
@@ -47,6 +49,13 @@ function App() {
         // Simple pseudo-auth based on Telegram User
         const tgUser = tg.initDataUnsafe?.user;
         if (tgUser) {
+          // Detect and set language
+          if (tg.initDataUnsafe?.user?.language_code === 'en') {
+            setLanguage('en');
+          } else {
+            setLanguage('ru');
+          }
+
           await login({
             ...tgUser,
             start_param: tg.initDataUnsafe?.start_param

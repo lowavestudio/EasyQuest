@@ -46,10 +46,13 @@ const FILTER_CHIPS = [
 
 const Feed = () => {
     const navigate = useNavigate();
-    const { tasks, role, user, userLocation, setUserLocation, fetchTasks, notify } = useAppStore();
+    const { tasks, role, user, userLocation, setUserLocation, fetchTasks, notify, t } = useAppStore();
     const [isLocating, setIsLocating] = useState(false);
     const [activeChip, setActiveChip] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+
+    const feedT = t('feed');
+    const commonT = t('common');
 
     useEffect(() => {
         fetchTasks();
@@ -131,11 +134,11 @@ const Feed = () => {
                     <div className="header-icon">
                         <Navigation size={18} />
                     </div>
-                    Лента заданий
+                    {feedT.title}
                 </div>
                 <button
                     className="filter-btn"
-                    onClick={() => notify('Расширенные фильтры будут доступны в следующем обновлении!', 'info')}
+                    onClick={() => notify(t('common.error') === 'Ошибка' ? 'Расширенные фильтры будут доступны скоро!' : 'Advanced filters coming soon! ', 'info')}
                 >
                     <Settings2 size={20} />
                 </button>
@@ -154,7 +157,7 @@ const Feed = () => {
                         type="text"
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        placeholder="Поиск заданий..."
+                        placeholder={feedT.search}
                         style={{
                             flex: 1, border: 'none', background: 'transparent', outline: 'none',
                             fontSize: '14px', color: 'var(--tg-theme-text-color)',
@@ -180,7 +183,7 @@ const Feed = () => {
                         className={`chip ${activeChip === chip.id ? 'active' : ''}`}
                         onClick={() => setActiveChip(chip.id)}
                     >
-                        {chip.label}
+                        {feedT.chips[chip.id] || chip.label}
                     </button>
                 ))}
             </div>
@@ -210,7 +213,7 @@ const Feed = () => {
                     ))}
                     {userLocation && (
                         <Marker position={userLocation} icon={userIcon}>
-                            <Popup>Вы здесь</Popup>
+                            <Popup>{t('common.error') === 'Ошибка' ? 'Вы здесь' : 'You are here'}</Popup>
                         </Marker>
                     )}
                     <MapFlyTo position={userLocation} />
@@ -238,9 +241,9 @@ const Feed = () => {
 
             <div className="section-header" style={{ marginTop: '0', padding: '16px 16px 8px' }}>
                 <div className="section-title">
-                    {role === 'customer' ? 'Ваши задания' : 'Задания рядом'}
+                    {role === 'customer' ? feedT.my_tasks : feedT.nearby}
                 </div>
-                <div className="badge">{filteredTasks.length} доступно</div>
+                <div className="badge">{filteredTasks.length} {feedT.available}</div>
             </div>
 
             <div className="task-feed" style={{ padding: '0 16px 16px' }}>
@@ -249,9 +252,9 @@ const Feed = () => {
                         <div className="empty-state-icon">
                             <MapPin size={28} />
                         </div>
-                        <div className="empty-state-title">Заданий нет</div>
+                        <div className="empty-state-title">{feedT.no_tasks}</div>
                         <div className="empty-state-text">
-                            По выбранному фильтру пока нет доступных заданий
+                            {feedT.no_tasks_text}
                         </div>
                     </div>
                 ) : (
@@ -284,11 +287,11 @@ const Feed = () => {
                                             {task.address
                                                 ? task.address
                                                 : task.distanceValue !== undefined && task.distanceValue !== null
-                                                    ? `${task.distanceValue.toFixed(1)} км`
-                                                    : 'рядом'}
+                                                    ? `${task.distanceValue.toFixed(1)} ${commonT.km}`
+                                                    : (t('common.error') === 'Ошибка' ? 'рядом' : 'nearby')}
                                         </span>
                                         <span className="task-meta-item">
-                                            <Clock size={13} /> {task.timeAllowed || '15 мин'}
+                                            <Clock size={13} /> {task.timeAllowed || `15 ${commonT.min}`}
                                         </span>
                                     </div>
                                 </div>

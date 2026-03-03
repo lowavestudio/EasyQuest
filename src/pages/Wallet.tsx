@@ -12,17 +12,10 @@ const PACKAGES = [
     { stars: 250, ton: '1.80', label: 'Профи', badge: '⚡ Максимум' },
 ];
 
-const TX_TYPE_META: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-    earn: { label: 'Заработок', color: 'var(--success-color)', bg: 'var(--success-bg)', icon: '⬆' },
-    bonus: { label: 'Бонус', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', icon: '🎁' },
-    spend: { label: 'Расход', color: 'var(--danger-color)', bg: 'rgba(239,68,68,0.1)', icon: '⬇' },
-    refund: { label: 'Возврат', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: '↩' },
-    topup: { label: 'Пополнение', color: 'var(--accent-color)', bg: 'var(--accent-light)', icon: '💳' },
-    withdraw: { label: 'Вывод', color: 'var(--warning-color)', bg: 'rgba(245,158,11,0.12)', icon: '💸' },
-};
+
 
 const Wallet = () => {
-    const { balance, user, transactions, buyStars, withdraw } = useAppStore();
+    const { balance, user, transactions, buyStars, withdraw, t, language } = useAppStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [showTopUp, setShowTopUp] = useState(false);
     const [showWithdraw, setShowWithdraw] = useState(false);
@@ -30,13 +23,25 @@ const Wallet = () => {
     const [withdrawAddress, setWithdrawAddress] = useState('');
     const [processingPkg, setProcessingPkg] = useState<number | null>(null);
 
+    const walletT = t('wallet');
+    const commonT = t('common');
+
+    const txTypeMeta: Record<string, { label: string; color: string; bg: string; icon: string }> = {
+        earn: { label: language === 'ru' ? 'Заработок' : 'Earning', color: 'var(--success-color)', bg: 'var(--success-bg)', icon: '⬆' },
+        bonus: { label: language === 'ru' ? 'Бонус' : 'Bonus', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', icon: '🎁' },
+        spend: { label: language === 'ru' ? 'Расход' : 'Expense', color: 'var(--danger-color)', bg: 'rgba(239,68,68,0.1)', icon: '⬇' },
+        refund: { label: language === 'ru' ? 'Возврат' : 'Refund', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: '↩' },
+        topup: { label: language === 'ru' ? 'Пополнение' : 'Top up', color: 'var(--accent-color)', bg: 'var(--accent-light)', icon: '💳' },
+        withdraw: { label: language === 'ru' ? 'Вывод' : 'Withdraw', color: 'var(--warning-color)', bg: 'rgba(245,158,11,0.12)', icon: '💸' },
+    };
+
     // Simple 7-day balance mini chart
     const chartData = useMemo(() => {
         const days: { label: string; balance: number }[] = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dayLabel = d.toLocaleDateString('ru-RU', { weekday: 'short' });
+            const dayLabel = d.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { weekday: 'short' });
             // Sum up all transactions up to this day
             const runningBalance = transactions
                 .filter(t => new Date(t.createdAt) <= d)
@@ -44,7 +49,7 @@ const Wallet = () => {
             days.push({ label: dayLabel, balance: Math.max(0, runningBalance) });
         }
         return days;
-    }, [transactions]);
+    }, [transactions, language]);
 
     const maxVal = Math.max(...chartData.map(d => d.balance), 1);
 
@@ -52,9 +57,10 @@ const Wallet = () => {
         const d = new Date(dateStr);
         const today = new Date();
         const isToday = d.toDateString() === today.toDateString();
-        if (isToday) return 'Сегодня, ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ', ' +
-            d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const locale = language === 'ru' ? 'ru-RU' : 'en-US';
+        if (isToday) return (language === 'ru' ? 'Сегодня, ' : 'Today, ') + d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) + ', ' +
+            d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
     };
 
     const handleBuyStars = async (stars: number, idx: number) => {
@@ -93,7 +99,7 @@ const Wallet = () => {
             <div className="top-header">
                 <div className="top-header-title">
                     <div className="header-icon"><WalletIcon size={18} /></div>
-                    Кошелёк
+                    {walletT.title}
                 </div>
             </div>
 
@@ -106,7 +112,7 @@ const Wallet = () => {
                     <div style={{ position: 'absolute', bottom: -20, left: -20, width: 100, height: 100, background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }} />
 
                     <div style={{ position: 'relative', zIndex: 1 }}>
-                        <div className="wallet-label" style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', opacity: 0.8 }}>ОБЩИЙ БАЛАНС</div>
+                        <div className="wallet-label" style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', opacity: 0.8 }}>{walletT.total_balance}</div>
                         <div className="wallet-amount" style={{ fontSize: '52px', fontWeight: 800, letterSpacing: '-2px', display: 'flex', alignItems: 'center', gap: '10px', margin: '8px 0' }}>
                             {balance}
                             <Star size={36} fill="white" strokeWidth={0} />
@@ -119,14 +125,14 @@ const Wallet = () => {
                                 onClick={() => setShowTopUp(true)}
                                 style={{ flex: 1, background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)', border: 'none', borderRadius: '12px', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
                             >
-                                <Plus size={17} /> Купить Stars
+                                <Plus size={17} /> {walletT.buy_stars}
                             </button>
                             <button
                                 className="wallet-action-btn"
                                 onClick={() => setShowWithdraw(true)}
                                 style={{ flex: 1, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', color: 'white', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
                             >
-                                <ArrowUpRight size={17} /> Вывести
+                                <ArrowUpRight size={17} /> {walletT.withdraw}
                             </button>
                         </div>
                     </div>
@@ -136,13 +142,13 @@ const Wallet = () => {
                 <div className="stats-row" style={{ marginTop: '0px' }}>
                     <div className="stat-card" style={{ padding: '12px 14px' }}>
                         <div style={{ fontSize: '11px', color: 'var(--tg-theme-hint-color)', fontWeight: 600, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Star size={12} fill="var(--warning-color)" color="var(--warning-color)" /> Доступно для вывода
+                            <Star size={12} fill="var(--warning-color)" color="var(--warning-color)" /> {walletT.available_withdraw}
                         </div>
                         <div className="stat-value" style={{ fontSize: '18px', color: 'var(--tg-theme-text-color)' }}>{user?.earnedBalance ?? 0} ★</div>
                     </div>
                     <div className="stat-card" style={{ padding: '12px 14px' }}>
                         <div style={{ fontSize: '11px', color: 'var(--tg-theme-hint-color)', fontWeight: 600, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Gift size={12} color="#8b5cf6" /> Бонусы (для заданий)
+                            <Gift size={12} color="#8b5cf6" /> {walletT.bonuses}
                         </div>
                         <div className="stat-value" style={{ fontSize: '18px', color: 'var(--tg-theme-text-color)' }}>{user?.bonusBalance ?? 0} ★</div>
                     </div>
@@ -151,7 +157,7 @@ const Wallet = () => {
                 {/* Mini Bar Chart */}
                 {transactions.length > 0 && (
                     <div className="detail-section" style={{ padding: '16px' }}>
-                        <div className="section-heading" style={{ marginBottom: '16px' }}>📊 Активность за 7 дней</div>
+                        <div className="section-heading" style={{ marginBottom: '16px' }}>📊 {walletT.activity_7d}</div>
                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '60px' }}>
                             {chartData.map((d, i) => {
                                 const h = maxVal > 0 ? Math.max(4, (d.balance / maxVal) * 56) : 4;
@@ -189,7 +195,7 @@ const Wallet = () => {
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                                 <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--tg-theme-text-color)' }}>
-                                    💳 Пополнить баланс
+                                    💳 {walletT.topup_modal.title}
                                 </div>
                                 <button onClick={() => setShowTopUp(false)} style={{ background: 'var(--card-bg)', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                     <X size={16} color="var(--tg-theme-hint-color)" />
@@ -224,11 +230,11 @@ const Wallet = () => {
 
                                         <div style={{ flex: 1, textAlign: 'left' }}>
                                             <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--tg-theme-text-color)' }}>
-                                                {pkg.stars} Stars
+                                                {pkg.stars} {commonT.stars}
                                             </div>
                                             <div style={{ fontSize: '12px', color: 'var(--tg-theme-hint-color)', marginTop: '2px' }}>
-                                                {pkg.label}
-                                                {pkg.badge && <span style={{ marginLeft: '8px', background: 'var(--accent-light)', color: 'var(--accent-color)', padding: '1px 7px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>{pkg.badge}</span>}
+                                                {language === 'ru' ? pkg.label : (idx === 0 ? 'Starter' : idx === 1 ? 'Popular' : idx === 2 ? 'Best Value' : 'Pro')}
+                                                {pkg.badge && <span style={{ marginLeft: '8px', background: 'var(--accent-light)', color: 'var(--accent-color)', padding: '1px 7px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>{language === 'ru' ? pkg.badge : (idx === 1 ? '🔥 Choice' : idx === 2 ? '💎 Best' : '⚡ Max')}</span>}
                                             </div>
                                         </div>
 
@@ -244,7 +250,7 @@ const Wallet = () => {
                             </div>
 
                             <div style={{ marginTop: '14px', textAlign: 'center', fontSize: '12px', color: 'var(--tg-theme-hint-color)', lineHeight: 1.5 }}>
-                                Оплата происходит официально через Telegram (Telegram Stars).
+                                {walletT.topup_modal.official_tg}
                             </div>
                         </div>
                     </div>
@@ -264,7 +270,7 @@ const Wallet = () => {
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                                 <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--tg-theme-text-color)' }}>
-                                    💸 Вывод средств
+                                    💸 {walletT.withdraw_modal.title}
                                 </div>
                                 <button onClick={() => setShowWithdraw(false)} style={{ background: 'var(--card-bg)', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                     <X size={16} color="var(--tg-theme-hint-color)" />
@@ -273,30 +279,29 @@ const Wallet = () => {
 
                             {user && user.tasksCompleted < 3 ? (
                                 <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '14px', color: '#ef4444', fontSize: '14px', lineHeight: 1.5 }}>
-                                    <b>Внимание:</b> Для вывода средств необходимо выполнить минимум <b>3 задания</b>. Вы выполнили: {user.tasksCompleted}.
-                                    <br /><br />Это защита нашей платформы от накруток.
+                                    {walletT.withdraw_modal.min_tasks} {language === 'ru' ? 'Вы выполнили:' : 'You completed:'} {user.tasksCompleted}.
                                 </div>
                             ) : user && user.earnedBalance < 500 ? (
                                 <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '14px', color: '#ef4444', fontSize: '14px', lineHeight: 1.5 }}>
-                                    <b>Внимание:</b> Минимальная сумма вывода — <b>500 заработанных Stars</b>. У вас: {user.earnedBalance} Stars.
+                                    {walletT.withdraw_modal.min_amount} {language === 'ru' ? 'У вас:' : 'You have:'} {user.earnedBalance} {commonT.stars}.
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                     <div style={{ fontSize: '14px', color: 'var(--tg-theme-hint-color)' }}>
-                                        Доступно для вывода: <b style={{ color: 'var(--tg-theme-text-color)' }}>{user?.earnedBalance} ★</b>
+                                        {language === 'ru' ? 'Доступно для вывода:' : 'Available to withdraw:'} <b style={{ color: 'var(--tg-theme-text-color)' }}>{user?.earnedBalance} ★</b>
                                     </div>
                                     <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)' }}>Сумма вывода (Star)</span>
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)' }}>{walletT.withdraw_modal.amount_label}</span>
                                         <input
                                             type="number"
-                                            placeholder="Минимум 500"
+                                            placeholder={language === 'ru' ? 'Минимум 500' : 'Min 500'}
                                             value={withdrawAmount}
                                             onChange={(e) => setWithdrawAmount(e.target.value)}
                                             style={{ padding: '14px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--tg-theme-text-color)', fontSize: '16px', outline: 'none' }}
                                         />
                                     </label>
                                     <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)' }}>Ваш TON кошелёк</span>
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)' }}>{walletT.withdraw_modal.address_label}</span>
                                         <input
                                             type="text"
                                             placeholder="EQD..."
@@ -311,7 +316,7 @@ const Wallet = () => {
                                         onClick={handleWithdraw}
                                         disabled={isProcessing || !withdrawAmount || !withdrawAddress || parseInt(withdrawAmount) < 500 || parseInt(withdrawAmount) > (user?.earnedBalance ?? 0)}
                                     >
-                                        {isProcessing ? 'Обработка...' : 'Запросить вывод'}
+                                        {isProcessing ? (language === 'ru' ? 'Обработка...' : 'Processing...') : walletT.withdraw_modal.button}
                                     </button>
                                 </div>
                             )}
@@ -321,7 +326,7 @@ const Wallet = () => {
 
                 {/* Transactions */}
                 <div className="section-header" style={{ padding: '0', marginTop: '4px' }}>
-                    <div className="section-title">История операций</div>
+                    <div className="section-title">{walletT.history}</div>
                     <div className="badge">{transactions.length}</div>
                 </div>
 
@@ -329,12 +334,12 @@ const Wallet = () => {
                     {transactions.length === 0 ? (
                         <div className="empty-state" style={{ padding: '28px 0' }}>
                             <div className="empty-state-icon"><WalletIcon size={26} /></div>
-                            <div className="empty-state-title">Пока нет операций</div>
-                            <div className="empty-state-text">Здесь будет отображаться история ваших заработков и трат</div>
+                            <div className="empty-state-title">{walletT.no_history}</div>
+                            <div className="empty-state-text">{walletT.no_history_text}</div>
                         </div>
                     ) : (
                         transactions.map((tx, i) => {
-                            const meta = TX_TYPE_META[tx.type] || TX_TYPE_META.earn;
+                            const meta = txTypeMeta[tx.type] || txTypeMeta.earn;
                             const isPositive = tx.amount >= 0;
                             return (
                                 <div key={tx.id} style={{

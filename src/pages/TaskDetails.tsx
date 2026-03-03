@@ -16,14 +16,7 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
-const CATEGORY_META: Record<string, { label: string; Icon: any; color: string; bg: string }> = {
-    delivery: { label: 'Доставка', Icon: Truck, color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-    photo: { label: 'Фото/Видео', Icon: Camera, color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
-    help: { label: 'Помощь', Icon: Heart, color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
-    it: { label: 'IT', Icon: Monitor, color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
-    promo: { label: 'Промо', Icon: Megaphone, color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
-    other: { label: 'Другое', Icon: HelpCircle, color: '#64748b', bg: 'rgba(100,116,139,0.12)' },
-};
+
 
 const pinIcon = L.divIcon({
     className: '',
@@ -43,12 +36,24 @@ const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:3001';
 const TaskDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { tasks, acceptTask, abandonTask, cancelOwnTask, approveTask, completeTask, uploadPhoto, user } = useAppStore();
+    const { tasks, acceptTask, abandonTask, cancelOwnTask, approveTask, completeTask, uploadPhoto, user, t, language } = useAppStore();
     const [showAbandonModal, setShowAbandonModal] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+
+    const tdT = t('task_details');
+    const commonT = t('common');
+
+    const categories = {
+        delivery: { label: language === 'ru' ? 'Доставка' : 'Delivery', Icon: Truck, color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+        photo: { label: language === 'ru' ? 'Фото/Видео' : 'Photo/Video', Icon: Camera, color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
+        help: { label: language === 'ru' ? 'Помощь' : 'Help', Icon: Heart, color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+        it: { label: language === 'ru' ? 'IT' : 'IT', Icon: Monitor, color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+        promo: { label: language === 'ru' ? 'Промо' : 'Promo', Icon: Megaphone, color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+        other: { label: language === 'ru' ? 'Другое' : 'Other', Icon: HelpCircle, color: '#64748b', bg: 'rgba(100,116,139,0.12)' },
+    };
 
     const task = tasks.find(t => t.id === Number(id));
 
@@ -57,9 +62,9 @@ const TaskDetails = () => {
             <div className="page-container">
                 <div className="empty-state">
                     <div className="empty-state-icon"><Info size={28} /></div>
-                    <div className="empty-state-title">Задание не найдено</div>
+                    <div className="empty-state-title">{language === 'ru' ? 'Задание не найдено' : 'Task not found'}</div>
                     <button className="tg-button" style={{ marginTop: '12px', width: 'auto', padding: '12px 28px' }} onClick={() => navigate('/feed')}>
-                        К ленте
+                        {language === 'ru' ? 'К ленте' : 'To feed'}
                     </button>
                 </div>
             </div>
@@ -74,7 +79,7 @@ const TaskDetails = () => {
     const isUnderReview = task.status === 'under_review';
     const isCompleted = task.status === 'completed';
 
-    const catMeta = CATEGORY_META[task.category || 'other'] || CATEGORY_META.other;
+    const catMeta = categories[task.category as keyof typeof categories] || categories.other;
     const CatIcon = catMeta.Icon;
 
     const handleAccept = async () => {
@@ -132,7 +137,7 @@ const TaskDetails = () => {
                 <button className="back-btn" onClick={() => navigate(-1)}>
                     <ChevronLeft size={22} />
                 </button>
-                <div className="detail-title">Детали задания</div>
+                <div className="detail-title">{tdT.title}</div>
                 <div style={{ width: 36 }} />
             </div>
 
@@ -151,10 +156,10 @@ const TaskDetails = () => {
                             <CatIcon size={12} /> {catMeta.label}
                         </span>
                         <div>
-                            {isCancelled && <span className="status-badge" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Отменено</span>}
-                            {isUnderReview && <span className="status-badge reviewing">На проверке</span>}
-                            {isAccepted && <span className="status-badge accepted">В работе</span>}
-                            {isCompleted && <span className="status-badge completed">Завершено</span>}
+                            {isCancelled && <span className="status-badge" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{tdT.status.cancelled}</span>}
+                            {isUnderReview && <span className="status-badge reviewing">{tdT.status.reviewing}</span>}
+                            {isAccepted && <span className="status-badge accepted">{tdT.status.accepted}</span>}
+                            {isCompleted && <span className="status-badge completed">{tdT.status.completed}</span>}
                         </div>
                     </div>
 
@@ -164,17 +169,17 @@ const TaskDetails = () => {
                         <div className="d-meta-item">
                             <MapPin size={14} />
                             <span style={{ fontSize: '13px' }}>
-                                {task.address || task.distance || 'рядом'}
+                                {task.address || task.distance || commonT.distance_near}
                             </span>
                         </div>
                         <div className="d-meta-item">
                             <Clock size={14} />
-                            <span>~{task.timeAllowed || '15 мин'}</span>
+                            <span>~{task.timeAllowed || `15 ${commonT.min}`}</span>
                         </div>
                     </div>
 
                     <div className="d-reward-big">
-                        <span className="reward-label">Награда</span>
+                        <span className="reward-label">{tdT.reward_label}</span>
                         <div className="reward-amount">{task.reward} <span>★</span></div>
                     </div>
                 </div>
@@ -215,7 +220,7 @@ const TaskDetails = () => {
                 {/* Proof photo */}
                 {task.proofPhotoUrl && (
                     <div className="detail-section">
-                        <div className="section-heading">Отчёт исполнителя</div>
+                        <div className="section-heading">{tdT.report_title}</div>
                         <div style={{ marginTop: '12px', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                             <img
                                 src={`${API_BASE}${task.proofPhotoUrl}`}
@@ -229,7 +234,7 @@ const TaskDetails = () => {
                 {/* Description */}
                 <div className="detail-section">
                     <div className="section-heading">
-                        <Info size={17} /> Описание и инструкции
+                        <Info size={17} /> {tdT.description_title}
                     </div>
                     <p className="d-description">{task.description}</p>
                 </div>
@@ -237,12 +242,12 @@ const TaskDetails = () => {
                 {/* Requirements */}
                 <div className="detail-section">
                     <div className="section-heading">
-                        <CheckCircle2 size={17} /> Требования
+                        <CheckCircle2 size={17} /> {tdT.requirements_title}
                     </div>
                     <ul className="d-requirements">
-                        <li>Сделайте минимум 1 чёткое фото</li>
-                        <li>GPS-локация должна совпадать с меткой</li>
-                        <li>Сдайте в течение 2 часов после принятия</li>
+                        {tdT.requirements.map((req: string, i: number) => (
+                            <li key={i}>{req}</li>
+                        ))}
                     </ul>
                 </div>
 
@@ -250,7 +255,7 @@ const TaskDetails = () => {
                 {task.customer && (
                     <div className="detail-section">
                         <div className="section-heading">
-                            <Star size={17} /> Заказчик
+                            <Star size={17} /> {tdT.customer_title}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
                             {task.customer.photoUrl ? (
@@ -269,7 +274,7 @@ const TaskDetails = () => {
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#f59e0b', marginTop: '2px' }}>
                                     <Star size={12} fill="#f59e0b" />
-                                    {task.customer.rating?.toFixed(1)} • {task.customer.reviewCount ?? 0} отзывов
+                                    {task.customer.rating?.toFixed(1)} • {task.customer.reviewCount ?? 0} {t('profile').reviews}
                                 </div>
                             </div>
                         </div>
@@ -285,10 +290,10 @@ const TaskDetails = () => {
                     {isAvailable && !isOwner && (
                         <>
                             <div className="action-warning">
-                                Принимая задание, вы соглашаетесь выполнить его в установленный срок.
+                                {tdT.warnings.accept}
                             </div>
                             <button className="tg-button" onClick={handleAccept} disabled={isProcessing}>
-                                {isProcessing ? 'Принятие...' : 'Принять задание'}
+                                {isProcessing ? tdT.actions.accepting : tdT.actions.accept}
                             </button>
                         </>
                     )}
@@ -301,7 +306,7 @@ const TaskDetails = () => {
                                 style={{ background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                                 onClick={() => navigate(`/chat/${task.id}`)}
                             >
-                                <MessageSquare size={18} /> Чат с заказчиком
+                                <MessageSquare size={18} /> {tdT.actions.chat}
                             </button>
                             <label style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -310,7 +315,7 @@ const TaskDetails = () => {
                                 opacity: isUploading ? 0.7 : 1,
                             }}>
                                 <Upload size={18} />
-                                {isUploading ? 'Загрузка...' : 'Сдать задание (загрузить фото)'}
+                                {isUploading ? tdT.actions.uploading : tdT.actions.submit}
                                 <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhotoSubmit} disabled={isUploading} />
                             </label>
                             <button
@@ -319,7 +324,7 @@ const TaskDetails = () => {
                                 onClick={() => setShowAbandonModal(true)}
                                 disabled={isProcessing}
                             >
-                                <XCircle size={18} /> Отказаться от задания
+                                <XCircle size={18} /> {tdT.actions.abandon}
                             </button>
                         </div>
                     )}
@@ -328,14 +333,14 @@ const TaskDetails = () => {
                     {isUnderReview && isExecutor && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
                             <div className="action-warning" style={{ background: 'rgba(251,191,36,0.12)', color: '#d97706' }}>
-                                ⏳ Ваша работа на проверке у заказчика
+                                ⏳ {tdT.warnings.reviewing}
                             </div>
                             <button
                                 className="tg-button"
                                 style={{ background: 'var(--card-bg)', color: 'var(--tg-theme-text-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                                 onClick={() => navigate(`/chat/${task.id}`)}
                             >
-                                <MessageSquare size={18} /> Чат с заказчиком
+                                <MessageSquare size={18} /> {tdT.actions.chat}
                             </button>
                         </div>
                     )}
@@ -348,7 +353,7 @@ const TaskDetails = () => {
                             onClick={() => setShowCancelModal(true)}
                             disabled={isProcessing}
                         >
-                            <XCircle size={18} /> {isProcessing ? 'Отмена...' : 'Отменить задание'}
+                            <XCircle size={18} /> {isProcessing ? tdT.actions.cancelling : tdT.actions.cancel}
                         </button>
                     )}
 
@@ -360,9 +365,9 @@ const TaskDetails = () => {
                                 style={{ background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                                 onClick={() => navigate(`/chat/${task.id}`)}
                             >
-                                <MessageSquare size={18} /> Чат с исполнителем
+                                <MessageSquare size={18} /> {tdT.actions.chat_executor}
                             </button>
-                            <div className="action-warning">Задание принято. Ожидайте выполнения.</div>
+                            <div className="action-warning">{tdT.warnings.waiting}</div>
                         </div>
                     )}
 
@@ -374,7 +379,7 @@ const TaskDetails = () => {
                                 style={{ background: 'var(--card-bg)', color: 'var(--tg-theme-text-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                                 onClick={() => navigate(`/chat/${task.id}`)}
                             >
-                                <MessageSquare size={18} /> Чат с исполнителем
+                                <MessageSquare size={18} /> {tdT.actions.chat_executor}
                             </button>
                             <button
                                 className="tg-button"
@@ -382,7 +387,7 @@ const TaskDetails = () => {
                                 onClick={() => setShowReviewModal(true)}
                                 disabled={isProcessing}
                             >
-                                {isProcessing ? 'Завершение...' : <><Star size={18} fill="white" /> Принять и оплатить</>}
+                                {isProcessing ? tdT.actions.approving : <><Star size={18} fill="white" /> {tdT.actions.approve}</>}
                             </button>
                         </div>
                     )}
@@ -390,8 +395,8 @@ const TaskDetails = () => {
             )}
 
             <ReviewModal open={showReviewModal} taskTitle={task.title} onClose={() => setShowReviewModal(false)} onConfirm={handleApprove} />
-            <ConfirmModal open={showAbandonModal} title="Отказаться от задания?" message="Задание вернётся в ленту. Это не повлияет на ваш рейтинг." confirmText="Да, отказаться" cancelText="Нет, продолжить" danger onConfirm={handleAbandon} onCancel={() => setShowAbandonModal(false)} />
-            <ConfirmModal open={showCancelModal} title="Отменить задание?" message={`Задание будет снято с публикации. ${task.reward} ★ вернутся на ваш баланс.`} confirmText="Да, отменить" cancelText="Нет, оставить" danger onConfirm={handleCancelOwn} onCancel={() => setShowCancelModal(false)} />
+            <ConfirmModal open={showAbandonModal} title={tdT.actions.abandon + "?"} message={language === 'ru' ? "Задание вернётся в ленту. Это не повлияет на ваш рейтинг." : "Task will return to the feed. This won't affect your rating."} confirmText={language === 'ru' ? "Да, отказаться" : "Yes, abandon"} cancelText={language === 'ru' ? "Нет, продолжить" : "No, continue"} danger onConfirm={handleAbandon} onCancel={() => setShowAbandonModal(false)} />
+            <ConfirmModal open={showCancelModal} title={tdT.actions.cancel + "?"} message={language === 'ru' ? `Задание будет снято с публикации. ${task.reward} ★ вернутся на ваш баланс.` : `Task will be unpublished. ${task.reward} ★ will be returned to your balance.`} confirmText={language === 'ru' ? "Да, отменить" : "Yes, cancel"} cancelText={language === 'ru' ? "Нет, оставить" : "No, keep"} danger onConfirm={handleCancelOwn} onCancel={() => setShowCancelModal(false)} />
         </div>
     );
 };

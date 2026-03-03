@@ -8,6 +8,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { v2 as cloudinary } from 'cloudinary';
+import { sendTon } from './ton.js';
 
 dotenv.config();
 
@@ -525,14 +526,35 @@ app.post('/api/user/:id/withdraw', async (req, res) => {
             }
         });
 
+        // --- AUTOMATIC WITHDRAWAL ---
+        const tonAmount = Number(amount) * 0.01;
+        let transferInfo = { status: 'manual' };
+
+        try {
+            console.log(`🚀 Processing automatic withdrawal for ${user.id}: ${tonAmount} TON to ${walletAddress}`);
+            const result = await sendTon(walletAddress, tonAmount);
+            transferInfo = { status: 'auto', result };
+            console.log(`✅ Auto-withdrawal successful for ${user.id}`);
+        } catch (tonErr) {
+            console.error(`❌ Auto-withdrawal failed for ${user.id}:`, tonErr);
+            transferInfo = { status: 'failed', error: tonErr.message };
+        }
+
         // Notify admin
         if (BOT_TOKEN && process.env.ADMIN_CHAT_ID) {
+            const statusIcon = transferInfo.status === 'auto' ? '✅' : transferInfo.status === 'failed' ? '❌' : '⏳';
+            const statusMsg = transferInfo.status === 'auto'
+                ? '<b>Авто-вывод выполнен успешно!</b>'
+                : transferInfo.status === 'failed'
+                    ? `<b>Ошибка авто-вывода:</b> <code>${transferInfo.error}</code>\n<i>Требуется ручное вмешательство!</i>`
+                    : '<b>Требуется ручной вывод.</b>';
+
             await sendNotification(process.env.ADMIN_CHAT_ID,
-                `💸 <b>Запрос на вывод</b>\n\nПользователь: <a href="tg://user?id=${user.id}">${user.firstName}</a>\nСумма: <b>${amount} Stars</b>\nКошелёк: <code>${walletAddress}</code>\n\nПроверьте и отправьте вручную.`
+                `💸 <b>Запрос на вывод (${amount} Stars)</b>\n\nПользователь: <a href="tg://user?id=${user.id}">${user.firstName}</a>\nСумма: <b>${tonAmount.toFixed(2)} TON</b>\nКошелёк: <code>${walletAddress}</code>\n\nСтатус: ${statusIcon} ${statusMsg}`
             );
         }
 
-        res.json({ success: true, user: updated });
+        res.json({ success: true, user: updated, transfer: transferInfo });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

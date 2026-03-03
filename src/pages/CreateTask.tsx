@@ -14,14 +14,7 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
-const CATEGORIES = [
-    { id: 'delivery', label: 'Доставка', icon: Truck, color: '#f59e0b' },
-    { id: 'photo', label: 'Фото/Видео', icon: Camera, color: '#8b5cf6' },
-    { id: 'help', label: 'Помощь', icon: Heart, color: '#ef4444' },
-    { id: 'it', label: 'IT', icon: Monitor, color: '#3b82f6' },
-    { id: 'promo', label: 'Промо', icon: Megaphone, color: '#10b981' },
-    { id: 'other', label: 'Другое', icon: HelpCircle, color: '#64748b' },
-];
+
 
 interface NominatimResult {
     place_id: number;
@@ -84,13 +77,25 @@ function DraggableMarker({
 
 const CreateTask = () => {
     const navigate = useNavigate();
-    const { addTask, userLocation, balance } = useAppStore();
+    const { addTask, userLocation, balance, t, language } = useAppStore();
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [reward, setReward] = useState('50');
     const [category, setCategory] = useState('other');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const ctT = t('create_task');
+    const commonT = t('common');
+
+    const categories = [
+        { id: 'delivery', label: language === 'ru' ? 'Доставка' : 'Delivery', icon: Truck, color: '#f59e0b' },
+        { id: 'photo', label: language === 'ru' ? 'Фото/Видео' : 'Photo/Video', icon: Camera, color: '#8b5cf6' },
+        { id: 'help', label: language === 'ru' ? 'Помощь' : 'Help', icon: Heart, color: '#ef4444' },
+        { id: 'it', label: language === 'ru' ? 'IT' : 'IT', icon: Monitor, color: '#3b82f6' },
+        { id: 'promo', label: language === 'ru' ? 'Промо' : 'Promo', icon: Megaphone, color: '#10b981' },
+        { id: 'other', label: language === 'ru' ? 'Другое' : 'Other', icon: HelpCircle, color: '#64748b' },
+    ];
 
     // Location state
     const defaultPos: [number, number] = userLocation ?? [51.505, -0.09];
@@ -112,8 +117,8 @@ const CreateTask = () => {
     const reverseGeocode = useCallback(async (lat: number, lng: number) => {
         try {
             const res = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru`,
-                { headers: { 'Accept-Language': 'ru' } }
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=${language}`,
+                { headers: { 'Accept-Language': language } }
             );
             const data = await res.json();
             if (data.display_name) {
@@ -124,7 +129,7 @@ const CreateTask = () => {
         } catch {
             setAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
         }
-    }, []);
+    }, [language]);
 
     const handleMarkerMove = useCallback((lat: number, lng: number) => {
         setMarkerPos([lat, lng]);
@@ -146,8 +151,8 @@ const CreateTask = () => {
             setIsSearching(true);
             try {
                 const res = await fetch(
-                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&accept-language=ru`,
-                    { headers: { 'Accept-Language': 'ru' } }
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&accept-language=${language}`,
+                    { headers: { 'Accept-Language': language } }
                 );
                 const data: NominatimResult[] = await res.json();
                 setSearchResults(data);
@@ -198,7 +203,7 @@ const CreateTask = () => {
                 <button className="back-btn" onClick={() => navigate(-1)}>
                     <ChevronLeft size={22} />
                 </button>
-                <div className="detail-title">Новое задание</div>
+                <div className="detail-title">{ctT.title}</div>
                 <div style={{ width: 36 }} />
             </div>
 
@@ -207,9 +212,9 @@ const CreateTask = () => {
 
                     {/* Category picker */}
                     <div className="form-group">
-                        <label className="form-label">Категория</label>
+                        <label className="form-label">{ctT.category}</label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                            {CATEGORIES.map(cat => {
+                            {categories.map(cat => {
                                 const Icon = cat.icon;
                                 const isActive = category === cat.id;
                                 return (
@@ -238,34 +243,34 @@ const CreateTask = () => {
 
                     {/* Title */}
                     <div className="form-group">
-                        <label className="form-label">Название</label>
+                        <label className="form-label">{ctT.task_title}</label>
                         <input
                             autoFocus
                             className="form-input"
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            placeholder="Например: Аудит витрины магазина"
+                            placeholder={ctT.placeholders.title}
                             disabled={isSubmitting}
                         />
                     </div>
 
                     {/* Description */}
                     <div className="form-group">
-                        <label className="form-label">Описание и инструкции</label>
+                        <label className="form-label">{ctT.description}</label>
                         <textarea
                             className="form-input"
                             value={description}
                             onChange={e => setDescription(e.target.value)}
                             rows={3}
                             style={{ resize: 'none' }}
-                            placeholder="Что должен сделать исполнитель?"
+                            placeholder={ctT.placeholders.description}
                             disabled={isSubmitting}
                         />
                     </div>
 
                     {/* Reward */}
                     <div className="form-group">
-                        <label className="form-label">Награда (Stars)</label>
+                        <label className="form-label">{ctT.reward} ({commonT.stars})</label>
                         <input
                             type="number"
                             className="form-input"
@@ -276,14 +281,14 @@ const CreateTask = () => {
                         />
                         {rewardNum > balance && (
                             <span style={{ fontSize: '12px', color: 'var(--danger-color)', fontWeight: '600' }}>
-                                Недостаточно средств (баланс: {balance} ★)
+                                {language === 'ru' ? `Недостаточно средств (баланс: ${balance} ★)` : `Insufficient funds (balance: ${balance} ★)`}
                             </span>
                         )}
                     </div>
 
                     {/* Location Section */}
                     <div className="form-group">
-                        <label className="form-label">Место выполнения</label>
+                        <label className="form-label">{ctT.location}</label>
 
                         {/* Address Search */}
                         <div style={{ position: 'relative', marginBottom: '10px' }}>
@@ -301,7 +306,7 @@ const CreateTask = () => {
                                     value={searchQuery}
                                     onChange={handleSearchChange}
                                     onFocus={() => searchResults.length > 0 && setShowResults(true)}
-                                    placeholder="Поиск адреса..."
+                                    placeholder={ctT.placeholders.address}
                                     style={{
                                         flex: 1, border: 'none', background: 'transparent', outline: 'none',
                                         fontSize: '14px', color: 'var(--tg-theme-text-color)',
@@ -378,7 +383,7 @@ const CreateTask = () => {
                                 padding: '5px 12px', borderRadius: '20px', zIndex: 800,
                                 pointerEvents: 'none', whiteSpace: 'nowrap',
                             }}>
-                                Нажмите или перетащите метку
+                                {language === 'ru' ? 'Нажмите или перетащите метку' : 'Click or drag the marker'}
                             </div>
                         </div>
 
@@ -404,8 +409,8 @@ const CreateTask = () => {
                         style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
                     >
                         {isSubmitting
-                            ? <><Loader2 size={17} className="spin-anim" /> Публикация...</>
-                            : <><Send size={17} /> Опубликовать задание</>
+                            ? <><Loader2 size={17} className="spin-anim" /> {commonT.loading}</>
+                            : <><Send size={17} /> {ctT.publish_btn}</>
                         }
                     </button>
                 </form>
