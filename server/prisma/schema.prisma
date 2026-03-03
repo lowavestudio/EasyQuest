@@ -27,6 +27,10 @@ model User {
   rating      Float    @default(5.0)
   reviewCount Int      @default(0)
 
+  // Geolocation for push notifications
+  lastKnownLat Float?
+  lastKnownLng Float?
+  
   // Relations
   tasksCreated Task[] @relation("CustomerTasks")
   tasksAccepted Task[] @relation("ExecutorTasks")

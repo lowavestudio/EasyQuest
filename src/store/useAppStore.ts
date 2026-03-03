@@ -18,6 +18,7 @@ export interface User {
         referrals: number;
     };
     verificationStatus: 'none' | 'pending' | 'verified' | 'rejected';
+    isAdmin?: boolean;
 }
 
 export type Role = 'executor' | 'customer';
@@ -429,5 +430,19 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
     },
 
-    setUserLocation: (coords) => set({ userLocation: coords })
+    setUserLocation: async (coords) => {
+        set({ userLocation: coords });
+        const { user } = get();
+        if (user && coords) {
+            try {
+                await fetch(`${API_URL}/user/${user.id}/location`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat: coords[0], lng: coords[1] })
+                });
+            } catch (e) {
+                console.error('Failed to sync location', e);
+            }
+        }
+    }
 }));

@@ -330,7 +330,10 @@ app.post('/api/auth/login', async (req, res) => {
             });
             await sendNotification(id, `<b>Добро пожаловать в Easy Quest, ${firstName}!</b>\n\nВам начислен бонус: 150 Stars ✨`);
         }
-        res.json(user);
+
+        const adminId = process.env.ADMIN_CHAT_ID;
+        const isAdmin = String(user.id) === String(adminId);
+        res.json({ ...user, isAdmin });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -347,7 +350,80 @@ app.get('/api/user/:id', async (req, res) => {
                 _count: { select: { referrals: true } }
             }
         });
-        res.json(user);
+
+        if (!user) return res.status(404).json({ error: 'Not found' });
+
+        const adminId = process.env.ADMIN_CHAT_ID;
+        const isAdmin = String(user.id) === String(adminId);
+
+        res.json({ ...user, isAdmin });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST update user location
+app.post('/api/user/:id/location', async (req, res) => {
+    const { lat, lng } = req.body;
+    try {
+        await prisma.user.update({
+            where: { id: req.params.id },
+            data: { lastKnownLat: lat, lastKnownLng: lng }
+        });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- ADMIN API ---
+app.get('/api/admin/stats', async (req, res) => {
+    // Basic auth via token or ID check (ID check is safer here since we have ADMIN_CHAT_ID)
+    const adminId = process.env.ADMIN_CHAT_ID;
+    const reqAdminId = req.headers['x-admin-id'];
+
+    if (String(reqAdminId) !== String(adminId)) {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    try {
+        const [userCount, taskCount, totalStars, pendingVerif] = await Promise.all([
+            prisma.user.count(),
+            prisma.task.count({ where: { status: 'completed' } }),
+            prisma.user.aggregate({ _sum: { balance: true } }),
+            prisma.user.count({ where: { verificationStatus: 'pending' } })
+        ]);
+
+        res.json({
+            userCount,
+            taskCount,
+            totalStars: totalStars._sum.balance || 0,
+            pendingVerif
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/broadcast', async (req, res) => {
+    const adminId = process.env.ADMIN_CHAT_ID;
+    const reqAdminId = req.headers['x-admin-id'];
+    const { message } = req.body;
+
+    if (String(reqAdminId) !== String(adminId)) {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    try {
+        const users = await prisma.user.findMany({ select: { id: true } });
+        let sent = 0;
+        for (const u of users) {
+            try {
+                await sendNotification(u.id, `📢 <b>Объявление:</b>\n\n${message}`);
+                sent++;
+            } catch (e) { /* ignore blocked bot */ }
+        }
+        res.json({ success: true, sent });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -640,6 +716,41 @@ app.post('/api/tasks', async (req, res) => {
             await tx.transaction.create({
                 data: { title: `Создание: ${title}`, amount: -reward, type: 'spend', userId: customerId }
             });
+
+            // --- Geolocation Push Notification ---
+            // After task is created, find users within 5km and notify them via Bot
+            try {
+                // Fetch users who have lat/lng and are not the customer
+                const nearbyUsers = await tx.user.findMany({
+                    where: {
+                        id: { not: customerId },
+                        lastKnownLat: { not: null },
+                        lastKnownLng: { not: null }
+                    },
+                    select: { id: true, firstName: true, lastKnownLat: true, lastKnownLng: true }
+                });
+
+                const haversine = (lat1, lon1, lat2, lon2) => {
+                    const R = 6371; // km
+                    const dLat = (lat2 - lat1) * Math.PI / 180;
+                    const dLon = (lon2 - lon1) * Math.PI / 180;
+                    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                };
+
+                for (const u of nearbyUsers) {
+                    const dist = haversine(lat, lng, u.lastKnownLat, u.lastKnownLng);
+                    if (dist <= 5) { // Notify users within 5km
+                        await sendNotification(u.id,
+                            `📍 <b>Новое задание рядом!</b>\n\n"${title}"\nНаграда: <b>${executorReward} Stars</b>\nРасстояние: <b>~${dist.toFixed(1)} км</b>\n\nУспейте выполнить первым! @easyquestwork_bot`
+                        );
+                    }
+                }
+            } catch (notifyErr) {
+                console.error('[Notification] Failed to notify nearby users:', notifyErr.message);
+            }
 
             // Log platform commission (informational)
             console.log(`[Commission] Task #${task.id}: ${commission}★ → ${PLATFORM_WALLET}`);

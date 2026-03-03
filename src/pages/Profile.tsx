@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { UserRound, ShieldCheck, Briefcase, ChevronRight, LogOut, Star, Trophy, HelpCircle, Users, Copy } from 'lucide-react';
+import { UserRound, ShieldCheck, Briefcase, ChevronRight, LogOut, Star, Trophy, HelpCircle, Users, Copy, Settings, Shield } from 'lucide-react';
 import { TonConnectButton } from '@tonconnect/ui-react';
 
 interface LeaderboardEntry {
@@ -283,8 +283,35 @@ const Profile = () => {
                             <span style={{ fontWeight: '600' }}>Выйти</span>
                         </div>
                     </div>
+                </div>
 
+                {/* Footer Links */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '20px' }}>
+                    {user?.isAdmin && (
+                        <div
+                            className="settings-row"
+                            onClick={() => navigate('/admin')}
+                            style={{ background: 'var(--accent-light)', border: '1px solid var(--accent-color)', borderRadius: '12px', cursor: 'pointer' }}
+                        >
+                            <div className="settings-row-left">
+                                <Settings size={18} color="var(--accent-color)" />
+                                <span style={{ fontWeight: '700', color: 'var(--accent-color)' }}>АДМИН-ПАНЕЛЬ</span>
+                            </div>
+                            <ChevronRight size={18} color="var(--accent-color)" />
+                        </div>
+                    )}
 
+                    <div
+                        className="settings-row"
+                        onClick={() => navigate('/privacy')}
+                        style={{ cursor: 'pointer', opacity: 0.7 }}
+                    >
+                        <div className="settings-row-left">
+                            <Shield size={16} color="var(--tg-theme-hint-color)" />
+                            <span style={{ fontSize: '13px', fontWeight: '500' }}>Политика конфиденциальности</span>
+                        </div>
+                        <ChevronRight size={16} color="var(--tg-theme-hint-color)" />
+                    </div>
                 </div>
 
             </div>

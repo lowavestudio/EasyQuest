@@ -11,6 +11,8 @@ import CreateTask from './pages/CreateTask';
 import Chat from './pages/Chat';
 import FAQ from './pages/FAQ';
 import Verification from './pages/Verification';
+import AdminPanel from './pages/AdminPanel';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import { useAppStore } from './store/useAppStore';
 import ToastContainer from './components/ToastContainer';
 
@@ -91,6 +93,8 @@ function App() {
               <Route path="/create-task" element={<CreateTask />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/verification" element={<Verification />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
             </Routes>
           </main>
           <BottomNav />
