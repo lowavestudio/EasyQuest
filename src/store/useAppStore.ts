@@ -173,10 +173,28 @@ export const useAppStore = create<AppState>((set, get) => ({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ stars })
             });
-            if (!res.ok) throw new Error();
-            // Since this opens a Telegram invoice, we don't need a success toast right now.
-            // When payment is done, backend will receive the webhook/poll update.
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'API Error');
+
+            // Open the Telegram Stars payment modal natively in the Mini App
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const tg = (window as any).Telegram?.WebApp;
+            if (tg?.openInvoice) {
+                tg.openInvoice(data.url, (status: string) => {
+                    if (status === 'paid') {
+                        // Wait a short moment to ensure backend webhook fully configures it
+                        setTimeout(() => get().refreshUser(), 1500);
+                        get().notify('Звёзды успешно приобретены!', 'success');
+                    } else if (status === 'failed') {
+                        get().notify('Оплата не удалась', 'error');
+                    }
+                    // 'cancelled' or 'pending' we can just silently ignore
+                });
+            } else {
+                get().notify('Пожалуйста, откройте приложение через Telegram', 'error');
+            }
         } catch (err) {
+            console.error(err);
             get().notify('Ошибка при создании счета', 'error');
         }
     },

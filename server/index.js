@@ -212,10 +212,35 @@ async function handleMainBotCommand(update) {
     }
 
     if (!msg.text) return;
-    const adminId = process.env.ADMIN_CHAT_ID;
-    if (String(msg.from.id) !== String(adminId)) return; // Only admin
-
     const text = msg.text.trim();
+
+    // /start command for all users
+    if (text.startsWith('/start')) {
+        const keyboard = {
+            inline_keyboard: [[
+                { text: "🚀 Запустить Easy Quest", web_app: { url: "https://easy-quest.onrender.com" } }
+            ]]
+        };
+        try {
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: msg.chat.id,
+                    text: `👋 <b>Добро пожаловать в Easy Quest!</b>\n\nЭто биржа простых заданий в вашем любимом мессенджере. Здесь вы можете:\n\n✨ <b>Зарабатывать Stars</b>, выполняя быстрые и легкие поручения.\n🔥 <b>Создавать задания</b> и находить исполнителей за пару минут.\n💳 <b>Выводить заработок</b> прямо на свой TON-кошелек.\n\n🎁 <i>При регистрации вы получите бонус 150 Stars!</i>\n\n👇 Нажмите кнопку ниже, чтобы запустить приложение.`,
+                    parse_mode: 'HTML',
+                    reply_markup: keyboard
+                })
+            });
+        } catch (e) {
+            console.error('[Bot] Failed to send /start message', e);
+        }
+    }
+
+    const adminId = process.env.ADMIN_CHAT_ID;
+    if (String(msg.from.id) !== String(adminId)) return; // Only admin past this point
+
+
 
     if (text.startsWith('/approve ')) {
         const userId = text.replace('/approve ', '').trim();
@@ -455,21 +480,23 @@ app.post('/api/user/:id/buy-stars', async (req, res) => {
     if (!pkg) return res.status(400).json({ error: 'Invalid package' });
 
     try {
-        const invoiceRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendInvoice`, {
+        const invoiceRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                chat_id: userId,
                 title: `Покупка ${pkg.label}`,
                 description: `Зачисление ${stars} Stars на баланс Easy Quest`,
                 payload: JSON.stringify({ userId, stars }),
+                provider_token: "", // Required to be empty for XTR
                 currency: 'XTR', // Telegram Stars
                 prices: [{ label: pkg.label, amount: pkg.price }]
             })
         });
         const invoiceData = await invoiceRes.json();
         if (!invoiceData.ok) throw new Error(invoiceData.description);
-        res.json({ success: true });
+
+        // Return the invoice link so Mini App can open it natively
+        res.json({ success: true, url: invoiceData.result });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
