@@ -10,6 +10,7 @@ import TaskDetails from './pages/TaskDetails';
 import CreateTask from './pages/CreateTask';
 import Chat from './pages/Chat';
 import FAQ from './pages/FAQ';
+import Verification from './pages/Verification';
 import { useAppStore } from './store/useAppStore';
 import ToastContainer from './components/ToastContainer';
 
@@ -44,7 +45,10 @@ function App() {
         // Simple pseudo-auth based on Telegram User
         const tgUser = tg.initDataUnsafe?.user;
         if (tgUser) {
-          await login(tgUser);
+          await login({
+            ...tgUser,
+            start_param: tg.initDataUnsafe?.start_param
+          });
         } else {
           await login({ id: 'demo123', first_name: 'Test', username: 'testuser' });
         }
@@ -86,6 +90,7 @@ function App() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/create-task" element={<CreateTask />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/verification" element={<Verification />} />
             </Routes>
           </main>
           <BottomNav />

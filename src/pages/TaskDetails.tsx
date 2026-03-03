@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, MapPin, Clock, Info, CheckCircle2, XCircle, Star, MessageSquare, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Upload } from 'lucide-react';
+import { ChevronLeft, MapPin, Clock, Info, CheckCircle2, XCircle, Star, MessageSquare, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Upload, ShieldCheck } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -245,6 +245,36 @@ const TaskDetails = () => {
                         <li>Сдайте в течение 2 часов после принятия</li>
                     </ul>
                 </div>
+
+                {/* Customer info */}
+                {task.customer && (
+                    <div className="detail-section">
+                        <div className="section-heading">
+                            <Star size={17} /> Заказчик
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+                            {task.customer.photoUrl ? (
+                                <img src={task.customer.photoUrl} alt="" style={{ width: '44px', height: '44px', borderRadius: '22px', objectFit: 'cover' }} />
+                            ) : (
+                                <div style={{ width: '44px', height: '44px', borderRadius: '22px', background: 'var(--tg-theme-secondary-bg-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold' }}>
+                                    {task.customer.firstName.charAt(0)}
+                                </div>
+                            )}
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', fontSize: '15px' }}>
+                                    {task.customer.firstName}
+                                    {task.customer.verificationStatus === 'verified' && (
+                                        <ShieldCheck size={16} color="#007aff" fill="#007aff" />
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#f59e0b', marginTop: '2px' }}>
+                                    <Star size={12} fill="#f59e0b" />
+                                    {task.customer.rating?.toFixed(1)} • {task.customer.reviewCount ?? 0} отзывов
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Bottom actions */}

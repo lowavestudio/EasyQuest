@@ -154,15 +154,101 @@ async function pollSupportBot() {
     setTimeout(pollSupportBot, 1000);
 }
 
+// Main bot polling — handles admin commands from the owner
+let mainBotOffset = 0;
+async function pollMainBot() {
+    if (!BOT_TOKEN) return;
+    try {
+        const res = await fetch(
+            `https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${mainBotOffset}&timeout=25&allowed_updates=["message"]`,
+            { signal: AbortSignal.timeout(30000) }
+        );
+        const data = await res.json();
+        if (data.ok && data.result.length > 0) {
+            for (const update of data.result) {
+                mainBotOffset = update.update_id + 1;
+                handleMainBotCommand(update).catch(console.error);
+            }
+        }
+    } catch (e) { /* retry */ }
+    setTimeout(pollMainBot, 1000);
+}
+
+async function handleMainBotCommand(update) {
+    const msg = update.message;
+    if (!msg || !msg.text) return;
+    const adminId = process.env.ADMIN_CHAT_ID;
+    if (String(msg.from.id) !== String(adminId)) return; // Only admin
+
+    const text = msg.text.trim();
+
+    if (text.startsWith('/approve ')) {
+        const userId = text.replace('/approve ', '').trim();
+        try {
+            await prisma.user.update({ where: { id: userId }, data: { verificationStatus: 'verified' } });
+            await sendNotification(adminId, `✅ Пользователь <code>${userId}</code> — верифицирован!`);
+            await sendNotification(userId, `🎉 <b>Ваш аккаунт верифицирован!</b>\n\nТеперь рядом с вашим именем отображается синяя галочка ✅. Заказчики будут доверять вам больше — вы будете получать приоритетные задания!\n\nOткройте приложение: @easyquestwork_bot`);
+        } catch (e) {
+            await sendNotification(adminId, `❌ Ошибка верификации: ${e.message}`);
+        }
+    } else if (text.startsWith('/reject ')) {
+        const userId = text.replace('/reject ', '').trim();
+        try {
+            await prisma.user.update({ where: { id: userId }, data: { verificationStatus: 'rejected' } });
+            await sendNotification(adminId, `🚫 Пользователь <code>${userId}</code> — отклонён.`);
+            await sendNotification(userId, `😔 <b>Верификация не пройдена</b>\n\nК сожалению, мы не смогли подтвердить вашу личность. Пожалуйста, повторите попытку:\n\n• Убедитесь что фото документа чёткое\n• Ваше лицо и данные документа чётко видны\n\nОткройте приложение: @easyquestwork_bot`);
+        } catch (e) {
+            await sendNotification(adminId, `❌ Ошибка отклонения: ${e.message}`);
+        }
+    } else if (text === '/pending') {
+        try {
+            const pending = await prisma.user.findMany({ where: { verificationStatus: 'pending' }, select: { id: true, firstName: true, verificationPhotoUrl: true } });
+            if (pending.length === 0) {
+                await sendNotification(adminId, `✅ Нет заявок на верификацию`);
+            } else {
+                for (const u of pending) {
+                    await sendNotification(adminId,
+                        `🛡 <b>Заявка на верификацию</b>\n\nПользователь: <a href="tg://user?id=${u.id}">${u.firstName}</a> (ID: <code>${u.id}</code>)\n<a href="${u.verificationPhotoUrl}">📋 Фото документа</a>\n\n<b>Одобрить:</b> /approve ${u.id}\n<b>Отклонить:</b> /reject ${u.id}`
+                    );
+                }
+            }
+        } catch (e) {
+            await sendNotification(adminId, `❌ Ошибка: ${e.message}`);
+        }
+    } else if (text === '/stats') {
+        try {
+            const [users, tasks, pending] = await Promise.all([
+                prisma.user.count(),
+                prisma.task.count({ where: { status: 'completed' } }),
+                prisma.user.count({ where: { verificationStatus: 'pending' } })
+            ]);
+            await sendNotification(adminId,
+                `📊 <b>Easy Quest Stats</b>\n\n👤 Пользователей: <b>${users}</b>\n✅ Выполнено заданий: <b>${tasks}</b>\n🛡 Ждут верификации: <b>${pending}</b>\n\n<i>/pending — список заявок на верификацию</i>`
+            );
+        } catch (e) {
+            await sendNotification(adminId, `❌ Ошибка: ${e.message}`);
+        }
+    }
+}
+
 
 // Auth / Login
 app.post('/api/auth/login', async (req, res) => {
-    const { id, firstName, username, photoUrl } = req.body;
+    const { id, firstName, username, photoUrl, startParam } = req.body;
     if (!id || !firstName) return res.status(400).json({ error: 'Missing fields' });
 
     try {
         let user = await prisma.user.findUnique({ where: { id: String(id) } });
         if (!user) {
+            let referredById = null;
+            if (startParam && startParam.startsWith('ref_')) {
+                const refId = startParam.replace('ref_', '');
+                if (refId !== String(id)) {
+                    const referrer = await prisma.user.findUnique({ where: { id: refId } });
+                    if (referrer) referredById = refId;
+                }
+            }
+
             user = await prisma.user.create({
                 data: {
                     id: String(id),
@@ -170,6 +256,7 @@ app.post('/api/auth/login', async (req, res) => {
                     username,
                     photoUrl,
                     balance: 150,
+                    referredById,
                     transactions: {
                         create: {
                             title: 'Бонус за регистрацию',
@@ -194,9 +281,34 @@ app.get('/api/user/:id', async (req, res) => {
             where: { id: req.params.id },
             include: {
                 transactions: { orderBy: { createdAt: 'desc' }, take: 20 },
-                reviews: { orderBy: { createdAt: 'desc' }, take: 5 }
+                reviews: { orderBy: { createdAt: 'desc' }, take: 5 },
+                _count: { select: { referrals: true } }
             }
         });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST submit verification KYC
+app.post('/api/user/:id/verify', async (req, res) => {
+    const { photoUrl } = req.body;
+    try {
+        const user = await prisma.user.update({
+            where: { id: req.params.id },
+            data: {
+                verificationStatus: 'pending',
+                verificationPhotoUrl: photoUrl
+            }
+        });
+
+        if (BOT_TOKEN && process.env.ADMIN_CHAT_ID) {
+            await sendNotification(process.env.ADMIN_CHAT_ID,
+                `🛡 <b>Новая заявка на верификацию!</b>\n\nПользователь: <a href="tg://user?id=${user.id}">${user.firstName}</a> (ID: <code>${user.id}</code>)\n\n<a href="${photoUrl}">📋 Посмотреть фото документа</a>\n\n<b>Одобрить:</b> /approve ${user.id}\n<b>Отклонить:</b> /reject ${user.id}`
+            );
+        }
+
         res.json(user);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -231,9 +343,29 @@ app.get('/api/tasks', async (req, res) => {
     try {
         const tasks = await prisma.task.findMany({
             where: { status: 'available' },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            include: {
+                customer: { select: { id: true, firstName: true, photoUrl: true, rating: true, verificationStatus: true } }
+            }
         });
         res.json(tasks);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET single task
+app.get('/api/tasks/:id', async (req, res) => {
+    try {
+        const task = await prisma.task.findUnique({
+            where: { id: Number(req.params.id) },
+            include: {
+                customer: { select: { id: true, firstName: true, photoUrl: true, rating: true, reviewCount: true, verificationStatus: true } },
+                executor: { select: { id: true, firstName: true, photoUrl: true, rating: true, reviewCount: true, verificationStatus: true } }
+            }
+        });
+        if (!task) return res.status(404).json({ error: 'Not found' });
+        res.json(task);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -399,6 +531,8 @@ app.post('/api/tasks/:id/approve', async (req, res) => {
             });
 
             // 2. Pay executor
+            const executor = await tx.user.findUnique({ where: { id: task.executorId } });
+
             await tx.user.update({
                 where: { id: task.executorId },
                 data: { balance: { increment: task.reward } }
@@ -408,13 +542,29 @@ app.post('/api/tasks/:id/approve', async (req, res) => {
                 data: { title: `Оплата: ${task.title}`, amount: task.reward, type: 'earn', userId: task.executorId }
             });
 
+            // Handle referral bonus (5% of original reward)
+            if (executor.referredById) {
+                const refBonus = Math.max(1, Math.round((task.reward / 0.9) * 0.05));
+                await tx.user.update({
+                    where: { id: executor.referredById },
+                    data: { balance: { increment: refBonus } }
+                });
+                await tx.transaction.create({
+                    data: { title: `Реф. бонус за ${task.title}`, amount: refBonus, type: 'earn', userId: executor.referredById }
+                });
+
+                // Try sending notification to referrer
+                try {
+                    await sendNotification(executor.referredById, `🎉 <b>Реферальный бонус!</b>\n\nВаш реферал завершил задание. Вам начислен бонус: ${refBonus} Stars ✨`);
+                } catch (e) { }
+            }
+
             // 3. Add review & Update rating
             if (rating) {
                 await tx.review.create({
                     data: { rating, comment, taskId: task.id, userId: task.executorId }
                 });
 
-                const executor = await tx.user.findUnique({ where: { id: task.executorId } });
                 const newCount = executor.reviewCount + 1;
                 const newRating = ((executor.rating * executor.reviewCount) + rating) / newCount;
 
@@ -570,4 +720,7 @@ app.listen(PORT, () => {
     console.log(`Backend running on port ${PORT}`);
     pollSupportBot();
     console.log('[SupportBot] Auto-responder started for @EasyQuestSupportBot');
+    pollMainBot();
+    console.log('[AdminBot] Commands listener started. Use /stats, /pending, /approve <id>, /reject <id>');
 });
+

@@ -11,11 +11,24 @@ export interface User {
     role: Role;
     rating: number;
     reviewCount: number;
+    _count?: {
+        referrals: number;
+    };
+    verificationStatus: 'none' | 'pending' | 'verified' | 'rejected';
 }
 
 export type Role = 'executor' | 'customer';
 
 export type TaskStatus = 'available' | 'accepted' | 'completed' | 'under_review' | 'cancelled';
+
+export interface TaskUser {
+    id: string;
+    firstName: string;
+    photoUrl?: string;
+    rating: number;
+    reviewCount?: number;
+    verificationStatus: 'none' | 'pending' | 'verified' | 'rejected';
+}
 
 export interface Task {
     id: number;
@@ -33,6 +46,8 @@ export interface Task {
     proofPhotoUrl?: string;
     category?: string;
     address?: string;
+    customer?: TaskUser;
+    executor?: TaskUser;
 }
 
 export interface Transaction {
@@ -84,6 +99,7 @@ interface AppState {
     uploadPhoto: (file: File) => Promise<string | null>;
     logout: () => void;
     topUp: (amount: number) => Promise<void>;
+    submitVerification: (photoUrl: string) => Promise<void>;
 
     // Chat actions
     fetchMessages: (taskId: number) => Promise<void>;
@@ -127,7 +143,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                     id: String(tgUser.id),
                     firstName: tgUser.first_name || tgUser.firstName,
                     username: tgUser.username,
-                    photoUrl: tgUser.photo_url || tgUser.photoUrl
+                    photoUrl: tgUser.photo_url || tgUser.photoUrl,
+                    startParam: tgUser.start_param || null
                 })
             });
             const user = await res.json();
@@ -157,6 +174,24 @@ export const useAppStore = create<AppState>((set, get) => ({
             get().notify(`Баланс пополнен на ${amount} ★`, 'success');
         } catch (err) {
             get().notify('Ошибка пополнения', 'error');
+        }
+    },
+
+    submitVerification: async (photoUrl) => {
+        const { user } = get();
+        if (!user) return;
+        try {
+            const res = await fetch(`${API_URL}/user/${user.id}/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ photoUrl })
+            });
+            if (!res.ok) throw new Error();
+            const updatedUser = await res.json();
+            set({ user: updatedUser });
+            get().notify('Документ отправлен на проверку', 'success');
+        } catch (err) {
+            get().notify('Ошибка отправки на верификацию', 'error');
         }
     },
 

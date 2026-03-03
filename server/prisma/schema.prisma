@@ -12,9 +12,13 @@ model User {
   firstName String
   username  String?
   photoUrl  String?
-  role      String   @default("executor") // 'executor' | 'customer'
-  balance   Int      @default(150)
-  createdAt DateTime @default(now())
+  role                 String   @default("executor") // 'executor' | 'customer'
+  balance              Int      @default(150)
+  createdAt            DateTime @default(now())
+  
+  // Verification
+  verificationStatus   String   @default("none") // 'none' | 'pending' | 'verified' | 'rejected'
+  verificationPhotoUrl String?
 
   // Stats and Rating
   rating      Float    @default(5.0)
@@ -26,6 +30,11 @@ model User {
   transactions Transaction[]
   reviews      Review[] @relation("UserReviews") // Reviews given TO this user
   messages     Message[]
+
+  // Referrals
+  referredById String?
+  referredBy   User?    @relation("Referrals", fields: [referredById], references: [id])
+  referrals    User[]   @relation("Referrals")
 }
 
 model Task {

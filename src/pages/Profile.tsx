@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { UserRound, ShieldCheck, Briefcase, ChevronRight, LogOut, Star, Trophy, HelpCircle } from 'lucide-react';
+import { UserRound, ShieldCheck, Briefcase, ChevronRight, LogOut, Star, Trophy, HelpCircle, Users, Copy } from 'lucide-react';
 import { TonConnectButton } from '@tonconnect/ui-react';
 
 interface LeaderboardEntry {
@@ -17,7 +17,7 @@ interface LeaderboardEntry {
 const MEDAL_COLORS = ['#f59e0b', '#94a3b8', '#cd7c3e'];
 
 const Profile = () => {
-    const { user, role, setRole, balance, tasks, logout } = useAppStore();
+    const { user, role, setRole, balance, tasks, logout, notify } = useAppStore();
     const navigate = useNavigate();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -162,8 +162,11 @@ const Profile = () => {
                         </div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--tg-theme-text-color)', letterSpacing: '-0.3px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--tg-theme-text-color)', letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             {user?.firstName}
+                            {user?.verificationStatus === 'verified' && (
+                                <ShieldCheck size={18} color="#007aff" fill="#007aff" style={{ color: 'white' }} />
+                            )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--star-bg)', color: '#f59e0b', padding: '2px 8px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' }}>
@@ -213,6 +216,38 @@ const Profile = () => {
                     </div>
                 </div>
 
+                {/* Referrals */}
+                <div className="detail-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div className="section-heading" style={{ marginBottom: '0' }}>
+                        <Users size={18} /> Партнёрская программа
+                    </div>
+                    <p style={{ fontSize: '13px', color: 'var(--tg-theme-hint-color)', lineHeight: '1.5' }}>
+                        Приглашайте друзей и получайте <b>5%</b> от каждого выполненного ими задания пожизненно!
+                    </p>
+
+                    <div style={{ background: 'var(--tg-theme-secondary-bg-color)', border: '1px solid var(--tg-theme-bg-color)', padding: '12px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', overflow: 'hidden' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--tg-theme-hint-color)' }}>Ваша ссылка</span>
+                            <span style={{ fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>t.me/easyquestwork_bot/app?startapp=ref_{user?.id}</span>
+                        </div>
+                        <button
+                            className="primary-btn"
+                            style={{ padding: '8px', minWidth: 'auto', borderRadius: '8px', marginLeft: '12px' }}
+                            onClick={() => {
+                                navigator.clipboard.writeText(`https://t.me/easyquestwork_bot/app?startapp=ref_${user?.id}`);
+                                notify('Ссылка скопирована!', 'success');
+                            }}
+                        >
+                            <Copy size={16} />
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 8px' }}>
+                        <span style={{ fontSize: '14px', color: 'var(--tg-theme-hint-color)' }}>Приглашено друзей</span>
+                        <span style={{ fontSize: '15px', fontWeight: 'bold' }}>{user?._count?.referrals || 0}</span>
+                    </div>
+                </div>
+
                 {/* Settings */}
                 <div className="detail-section" style={{ padding: '0', overflow: 'hidden' }}>
                     <div className="settings-row">
@@ -222,10 +257,12 @@ const Profile = () => {
                         </div>
                         <TonConnectButton />
                     </div>
-                    <div className="settings-row" onClick={() => navigate('/faq')} style={{ cursor: 'pointer' }}>
+                    <div className="settings-row" onClick={() => navigate('/verification')} style={{ cursor: 'pointer' }}>
                         <div className="settings-row-left">
-                            <ShieldCheck size={18} color="var(--tg-theme-hint-color)" />
+                            <ShieldCheck size={18} color={user?.verificationStatus === 'verified' ? '#007aff' : "var(--tg-theme-hint-color)"} />
                             <span style={{ fontWeight: '600' }}>Верификация</span>
+                            {user?.verificationStatus === 'pending' && <span style={{ fontSize: '12px', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '10px', marginLeft: '8px' }}>В обработке</span>}
+                            {user?.verificationStatus === 'verified' && <span style={{ fontSize: '12px', color: '#22c55e', background: 'rgba(34, 197, 94, 0.1)', padding: '2px 8px', borderRadius: '10px', marginLeft: '8px' }}>Подтверждено</span>}
                         </div>
                         <ChevronRight size={18} color="var(--tg-theme-hint-color)" />
                     </div>
