@@ -223,7 +223,7 @@ const TaskDetails = () => {
                         <div className="section-heading">{tdT.report_title}</div>
                         <div style={{ marginTop: '12px', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                             <img
-                                src={`${API_BASE}${task.proofPhotoUrl}`}
+                                src={task.proofPhotoUrl.startsWith('http') ? task.proofPhotoUrl : `${API_BASE}${task.proofPhotoUrl}`}
                                 alt="Proof"
                                 style={{ width: '100%', height: 'auto', display: 'block' }}
                             />

@@ -117,7 +117,7 @@ const Wallet = () => {
                             {balance}
                             <Star size={36} fill="white" strokeWidth={0} />
                         </div>
-                        <div className="wallet-subtext" style={{ opacity: 0.75, fontSize: '13px' }}>1 Star ≈ 0.01 TON · ≈ {(balance * 0.01 * 4.5).toFixed(0)} ₽</div>
+                        <div className="wallet-subtext" style={{ opacity: 0.75, fontSize: '13px' }}>1 Star ≈ 0.01 TON</div>
 
                         <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                             <button

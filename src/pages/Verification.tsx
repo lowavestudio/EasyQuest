@@ -4,11 +4,13 @@ import { useAppStore } from '../store/useAppStore';
 import { Camera, UploadCloud, ShieldCheck, ArrowLeft, Clock, XCircle } from 'lucide-react';
 
 const Verification = () => {
-    const { user, uploadPhoto, submitVerification } = useAppStore();
+    const { user, uploadPhoto, submitVerification, t } = useAppStore();
     const navigate = useNavigate();
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+
+    const verifT = t('verification');
 
     if (!user) return null;
 
@@ -42,9 +44,9 @@ const Verification = () => {
                     <div style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', width: '80px', height: '80px', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                         <ShieldCheck size={40} />
                     </div>
-                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>Аккаунт верифицирован</h2>
+                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>{verifT.verified_title}</h2>
                     <p style={{ color: 'var(--tg-theme-hint-color)', lineHeight: '1.5' }}>
-                        Вы официально подтвердили свою личность. Теперь заказчики видят специальную галочку рядом с вашим именем и больше доверяют вам!
+                        {verifT.verified_desc}
                     </p>
                 </div>
             );
@@ -56,9 +58,9 @@ const Verification = () => {
                     <div style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', width: '80px', height: '80px', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                         <Clock size={40} />
                     </div>
-                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>Документы проверяются</h2>
+                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>{verifT.pending_title}</h2>
                     <p style={{ color: 'var(--tg-theme-hint-color)', lineHeight: '1.5' }}>
-                        Мы получили вашу фотографию. Обычно проверка занимает не более 24 часов. Вы получите уведомление по её завершению.
+                        {verifT.pending_desc}
                     </p>
                 </div>
             );
@@ -70,12 +72,12 @@ const Verification = () => {
                     <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', width: '80px', height: '80px', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                         <XCircle size={40} />
                     </div>
-                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>Проверка не пройдена</h2>
+                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>{verifT.rejected_title}</h2>
                     <p style={{ color: 'var(--tg-theme-hint-color)', lineHeight: '1.5', marginBottom: '20px' }}>
-                        К сожалению, мы не смогли подтвердить вашу личность. Вероятно, фото было размытым или документ не читается.
+                        {verifT.rejected_desc}
                     </p>
-                    <button className="primary-btn" onClick={() => { setFile(null); setPreviewUrl(null); /* would need logic to reset status to none */ }}>
-                        Попробовать снова
+                    <button className="primary-btn" onClick={() => { setFile(null); setPreviewUrl(null); }}>
+                        {verifT.retry}
                     </button>
                 </div>
             );
@@ -88,18 +90,18 @@ const Verification = () => {
                     <div style={{ background: 'var(--tg-theme-secondary-bg-color)', color: 'var(--tg-theme-button-color)', width: '64px', height: '64px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                         <ShieldCheck size={32} />
                     </div>
-                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>Пройдите KYC верификацию</h2>
+                    <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>{verifT.top_title}</h2>
                     <p style={{ color: 'var(--tg-theme-hint-color)', lineHeight: '1.5', fontSize: '14px' }}>
-                        Верифицированные исполнители получают в 3 раза больше заданий и больше доверия от заказчиков.
+                        {verifT.top_desc}
                     </p>
                 </div>
 
                 <div style={{ background: 'var(--tg-theme-secondary-bg-color)', padding: '16px', borderRadius: '16px', marginBottom: '24px' }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px' }}>Как это сделать?</h3>
+                    <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px' }}>{verifT.how_to}</h3>
                     <ul style={{ paddingLeft: '20px', color: 'var(--tg-theme-hint-color)', fontSize: '14px', lineHeight: '1.6', margin: 0 }}>
-                        <li>Возьмите в руку свой паспорт или ID карту.</li>
-                        <li>Сделайте селфи так, чтобы было четко видно ваше лицо и данные на документе.</li>
-                        <li>Загрузите фото ниже.</li>
+                        {verifT.steps.map((step: string, i: number) => (
+                            <li key={i}>{step}</li>
+                        ))}
                     </ul>
                 </div>
 
@@ -109,7 +111,7 @@ const Verification = () => {
                             <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                             <Camera size={32} color="var(--tg-theme-hint-color)" style={{ marginBottom: '12px' }} />
                             <span style={{ color: 'var(--tg-theme-hint-color)', fontSize: '14px', fontWeight: '500' }}>
-                                Нажмите, чтобы загрузить селфи с паспортом
+                                {verifT.upload_hint}
                             </span>
                         </label>
                     ) : (
@@ -119,7 +121,7 @@ const Verification = () => {
                                 onClick={() => { setFile(null); setPreviewUrl(null); }}
                                 style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', padding: '8px 12px', borderRadius: '8px' }}
                             >
-                                Изменить фото
+                                {verifT.change_photo}
                             </button>
                         </div>
                     )}
@@ -131,7 +133,7 @@ const Verification = () => {
                     disabled={!file || isUploading}
                     style={{ opacity: (!file || isUploading) ? 0.5 : 1 }}
                 >
-                    {isUploading ? 'Отправляем данные...' : 'Отправить на проверку'}
+                    {isUploading ? verifT.submitting : verifT.submit}
                     {!isUploading && file && <UploadCloud size={18} />}
                 </button>
             </div>
@@ -144,7 +146,7 @@ const Verification = () => {
                 <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: 'var(--tg-theme-text-color)', padding: 0 }}>
                     <ArrowLeft size={24} />
                 </button>
-                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Верификация</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{verifT.title}</div>
             </div>
 
             <div style={{ paddingTop: '16px' }}>

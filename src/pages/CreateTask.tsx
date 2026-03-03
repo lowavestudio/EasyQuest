@@ -189,6 +189,7 @@ const CreateTask = () => {
             lat: markerPos[0],
             lng: markerPos[1],
             category,
+            address: address || undefined,
         });
 
         if (window.Telegram?.WebApp?.HapticFeedback) {

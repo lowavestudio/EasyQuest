@@ -22,7 +22,7 @@ function getTimerState(ms: number): 'active' | 'warning' | 'danger' {
 }
 
 const MyTasks = () => {
-    const { tasks, user, completeTask, abandonTask, fetchMyTasks, uploadPhoto, notify } = useAppStore();
+    const { tasks, user, completeTask, abandonTask, fetchMyTasks, uploadPhoto, notify, t } = useAppStore();
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const selectedTaskId = useRef<number | null>(null);
@@ -30,6 +30,9 @@ const MyTasks = () => {
     const [abandonModalTaskId, setAbandonModalTaskId] = useState<number | null>(null);
     const [isUploading, setIsUploading] = useState<number | null>(null);
     const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
+
+    const mtT = t('my_tasks');
+    const commonT = t('common');
 
     const activeTasks = tasks.filter(t => t.status === 'accepted' || t.status === 'under_review');
     const historyTasks = tasks.filter(t =>
@@ -64,7 +67,7 @@ const MyTasks = () => {
                     }
                 }
             } catch (err) {
-                notify('Ошибка при отправке отчета', 'error');
+                notify(commonT.error, 'error');
             } finally {
                 setIsUploading(null);
                 e.target.value = '';
@@ -96,7 +99,7 @@ const MyTasks = () => {
     return (
         <div className="page-container" style={{ padding: '0', alignItems: 'stretch', justifyContent: 'flex-start' }}>
             <div className="top-header">
-                <div className="top-header-title">Мои задания</div>
+                <div className="top-header-title">{mtT.title}</div>
                 <div className="badge">{activeTasks.length}</div>
             </div>
 
@@ -129,7 +132,7 @@ const MyTasks = () => {
                             boxShadow: activeTab === tab ? 'var(--shadow-accent)' : 'none',
                         }}
                     >
-                        {tab === 'active' ? `Активные (${activeTasks.length})` : `История (${historyTasks.length})`}
+                        {tab === 'active' ? `${mtT.tabs.active} (${activeTasks.length})` : `${mtT.tabs.history} (${historyTasks.length})`}
                     </button>
                 ))}
             </div>
@@ -151,16 +154,16 @@ const MyTasks = () => {
                             <div className="empty-state-icon">
                                 <ClipboardList size={28} />
                             </div>
-                            <div className="empty-state-title">Нет активных заданий</div>
+                            <div className="empty-state-title">{mtT.empty_active_title}</div>
                             <div className="empty-state-text">
-                                Примите задание из ленты, чтобы начать зарабатывать звёзды
+                                {mtT.empty_active_text}
                             </div>
                             <button
                                 className="tg-button"
                                 style={{ marginTop: '12px', width: 'auto', padding: '12px 28px', fontSize: '15px' }}
                                 onClick={() => navigate('/feed')}
                             >
-                                Найти задания
+                                {mtT.find_tasks}
                             </button>
                         </div>
                     ) : (
@@ -194,7 +197,7 @@ const MyTasks = () => {
                                         <div className="task-title">{task.title}</div>
                                         <div className="task-meta">
                                             {isReviewing ? (
-                                                <span className="status-badge reviewing">На проверке</span>
+                                                <span className="status-badge reviewing">{mtT.status.reviewing}</span>
                                             ) : (
                                                 <span className={`timer-badge ${timerState}`}>
                                                     <Clock size={12} /> {formatTime(remaining)}
@@ -212,7 +215,7 @@ const MyTasks = () => {
                                                     onClick={(e) => handleCompleteClick(e, task.id)}
                                                 >
                                                     {uploading ? <Loader2 size={14} className="spin-anim" /> : <Camera size={14} />}
-                                                    {uploading ? 'Загрузка...' : 'Сдать'}
+                                                    {uploading ? mtT.actions.uploading : mtT.actions.submit}
                                                 </button>
                                                 <button
                                                     disabled={uploading}
@@ -226,7 +229,7 @@ const MyTasks = () => {
                                                     }}
                                                     onClick={(e) => handleAbandonClick(e, task.id)}
                                                 >
-                                                    <XCircle size={12} /> Отказ
+                                                    <XCircle size={12} /> {mtT.actions.abandon}
                                                 </button>
                                             </>
                                         ) : (
@@ -248,9 +251,9 @@ const MyTasks = () => {
                             <div className="empty-state-icon">
                                 <CheckCircle2 size={28} />
                             </div>
-                            <div className="empty-state-title">История пуста</div>
+                            <div className="empty-state-title">{mtT.empty_history_title}</div>
                             <div className="empty-state-text">
-                                Здесь будут отображаться завершённые и отменённые задания
+                                {mtT.empty_history_text}
                             </div>
                         </div>
                     ) : (
@@ -283,14 +286,14 @@ const MyTasks = () => {
                                                 background: isCompleted ? 'var(--success-bg)' : 'rgba(239,68,68,0.1)',
                                                 color: isCompleted ? 'var(--success-color)' : 'var(--danger-color)',
                                             }}>
-                                                {isCompleted ? '✓ Выполнено' : '✗ Отменено'}
+                                                {isCompleted ? `✓ ${mtT.status.completed}` : `✗ ${mtT.status.cancelled}`}
                                             </span>
                                         </div>
                                         <div className="task-title">{task.title}</div>
                                         <div className="task-meta">
                                             <span className="task-meta-item">
                                                 <MapPin size={12} />
-                                                {isCustomer ? 'Вы — заказчик' : 'Вы — исполнитель'}
+                                                {isCustomer ? mtT.role.customer : mtT.role.executor}
                                             </span>
                                         </div>
                                     </div>
@@ -312,10 +315,10 @@ const MyTasks = () => {
 
             <ConfirmModal
                 open={abandonModalTaskId !== null}
-                title="Отказаться от задания?"
-                message="Задание вернётся в ленту и станет доступно другим исполнителям."
-                confirmText="Да, отказаться"
-                cancelText="Нет, продолжить"
+                title={mtT.abandon_modal.title}
+                message={mtT.abandon_modal.message}
+                confirmText={mtT.abandon_modal.confirm}
+                cancelText={mtT.abandon_modal.cancel}
                 danger
                 onConfirm={confirmAbandon}
                 onCancel={() => setAbandonModalTaskId(null)}

@@ -11,6 +11,8 @@ const Profile = () => {
 
     const profileT = t('profile');
 
+    const activeTaskCount = useAppStore(s => s.tasks.filter(t => (t.status === 'accepted' || t.status === 'under_review') && t.executorId === user?.id).length);
+
     return (
         <div className="page-container" style={{ padding: '0', alignItems: 'stretch', justifyContent: 'flex-start' }}>
             <div className="top-header">
@@ -41,7 +43,7 @@ const Profile = () => {
                         <div className="stat-label">{profileT.completed}</div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-value">0</div>
+                        <div className="stat-value">{activeTaskCount}</div>
                         <div className="stat-label">{profileT.active}</div>
                     </div>
                 </div>
@@ -119,8 +121,8 @@ const Profile = () => {
                                 color: user?.verificationStatus === 'verified' ? 'var(--success-color)' :
                                     user?.verificationStatus === 'pending' ? 'var(--warning-color)' : 'var(--tg-theme-hint-color)'
                             }}>
-                                {user?.verificationStatus === 'verified' ? 'Verified' :
-                                    user?.verificationStatus === 'pending' ? 'Pending' : 'Not Verified'}
+                                {user?.verificationStatus === 'verified' ? profileT.status.verified :
+                                    user?.verificationStatus === 'pending' ? profileT.status.pending : profileT.status.none}
                             </span>
                             <ChevronRight size={18} />
                         </div>
@@ -141,7 +143,7 @@ const Profile = () => {
                     <div className="settings-row">
                         <div className="settings-row-left">
                             <span style={{ color: 'var(--tg-theme-hint-color)' }}>💎</span>
-                            <span style={{ fontWeight: '600' }}>TON Кошелёк</span>
+                            <span style={{ fontWeight: '600' }}>{profileT.wallet_connect}</span>
                         </div>
                         <TonConnectButton />
                     </div>

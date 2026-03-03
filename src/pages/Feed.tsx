@@ -183,7 +183,7 @@ const Feed = () => {
                         className={`chip ${activeChip === chip.id ? 'active' : ''}`}
                         onClick={() => setActiveChip(chip.id)}
                     >
-                        {feedT.chips[chip.id] || chip.label}
+                        {feedT.chips[chip.id as keyof typeof feedT.chips] || chip.label}
                     </button>
                 ))}
             </div>
@@ -277,7 +277,7 @@ const Feed = () => {
                                             background: catMeta.bg, color: catMeta.color,
                                         }}>
                                             <CatIcon size={10} />
-                                            {catMeta.label}
+                                            {feedT.chips[(task.category || 'other') as keyof typeof feedT.chips] || catMeta.label}
                                         </span>
                                     </div>
                                     <div className="task-title">{task.title}</div>
