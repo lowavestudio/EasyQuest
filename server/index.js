@@ -160,7 +160,7 @@ async function pollMainBot() {
     if (!BOT_TOKEN) return;
     try {
         const res = await fetch(
-            `https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${mainBotOffset}&timeout=25&allowed_updates=["message"]`,
+            `https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${mainBotOffset}&timeout=25&allowed_updates=["message","pre_checkout_query"]`,
             { signal: AbortSignal.timeout(30000) }
         );
         const data = await res.json();
@@ -175,8 +175,43 @@ async function pollMainBot() {
 }
 
 async function handleMainBotCommand(update) {
+    // Handle Stars payment confirmation
+    if (update.pre_checkout_query) {
+        // Must answer within 10 seconds!
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerPreCheckoutQuery`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pre_checkout_query_id: update.pre_checkout_query.id, ok: true })
+        });
+        return;
+    }
+
     const msg = update.message;
-    if (!msg || !msg.text) return;
+    if (!msg) return;
+
+    // Handle successful payment — credit user balance
+    if (msg.successful_payment) {
+        const payment = msg.successful_payment;
+        const { userId, stars } = JSON.parse(payment.invoice_payload);
+        try {
+            await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    balance: { increment: stars },
+                    earnedBalance: { increment: stars }, // purchased = withdrawable
+                    transactions: {
+                        create: { title: `Покупка ${stars} Stars`, amount: stars, type: 'bonus', userId }
+                    }
+                }
+            });
+            await sendNotification(userId, `⭐ <b>Баланс пополнен!</b>\n\nВам зачислено <b>${stars} Stars</b>.\nОткройте приложение: @easyquestwork_bot`);
+        } catch (e) {
+            console.error('[Payment] Failed to credit balance:', e.message);
+        }
+        return;
+    }
+
+    if (!msg.text) return;
     const adminId = process.env.ADMIN_CHAT_ID;
     if (String(msg.from.id) !== String(adminId)) return; // Only admin
 
@@ -255,11 +290,13 @@ app.post('/api/auth/login', async (req, res) => {
                     firstName,
                     username,
                     photoUrl,
-                    balance: 150,
+                    balance: 150,      // display total
+                    bonusBalance: 150, // non-withdrawable welcome bonus
+                    earnedBalance: 0,  // withdrawable — starts at ZERO
                     referredById,
                     transactions: {
                         create: {
-                            title: 'Бонус за регистрацию',
+                            title: 'Бонус за регистрацию (не выводится)',
                             amount: 150,
                             type: 'bonus'
                         }
@@ -323,6 +360,7 @@ app.post('/api/user/:id/topup', async (req, res) => {
             where: { id: req.params.id },
             data: {
                 balance: { increment: Number(amount) },
+                earnedBalance: { increment: Number(amount) }, // topup = withdrawable
                 transactions: {
                     create: {
                         title: 'Пополнение баланса',
@@ -333,6 +371,105 @@ app.post('/api/user/:id/topup', async (req, res) => {
             }
         });
         res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST withdraw — with strict anti-fraud eligibility
+app.post('/api/user/:id/withdraw', async (req, res) => {
+    const { amount, walletAddress } = req.body;
+    const MIN_WITHDRAWAL = 500;  // Stars
+    const MIN_TASKS = 3;         // completed tasks required
+
+    try {
+        const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Anti-fraud: must have completed at least MIN_TASKS tasks
+        if (user.tasksCompleted < MIN_TASKS) {
+            return res.status(403).json({
+                error: `Для вывода нужно выполнить минимум ${MIN_TASKS} задания. У вас: ${user.tasksCompleted}.`
+            });
+        }
+
+        // Anti-fraud: can only withdraw earnedBalance (not bonus)
+        if (user.earnedBalance < MIN_WITHDRAWAL) {
+            return res.status(403).json({
+                error: `Минимальная сумма вывода — ${MIN_WITHDRAWAL} Stars. Ваш заработанный баланс: ${user.earnedBalance} Stars. Бонусные Stars не выводятся.`
+            });
+        }
+
+        if (user.earnedBalance < amount) {
+            return res.status(403).json({ error: 'Недостаточно заработанных Stars для вывода.' });
+        }
+
+        if (!walletAddress) {
+            return res.status(400).json({ error: 'Не указан TON-кошелёк.' });
+        }
+
+        // Deduct from both balances
+        const updated = await prisma.user.update({
+            where: { id: req.params.id },
+            data: {
+                balance: { decrement: Number(amount) },
+                earnedBalance: { decrement: Number(amount) },
+                transactions: {
+                    create: {
+                        title: `Вывод на ${walletAddress.slice(0, 8)}...`,
+                        amount: -Number(amount),
+                        type: 'withdraw'
+                    }
+                }
+            }
+        });
+
+        // Notify admin
+        if (BOT_TOKEN && process.env.ADMIN_CHAT_ID) {
+            await sendNotification(process.env.ADMIN_CHAT_ID,
+                `💸 <b>Запрос на вывод</b>\n\nПользователь: <a href="tg://user?id=${user.id}">${user.firstName}</a>\nСумма: <b>${amount} Stars</b>\nКошелёк: <code>${walletAddress}</code>\n\nПроверьте и отправьте вручную.`
+            );
+        }
+
+        res.json({ success: true, user: updated });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST buy-stars — send Telegram Stars invoice to user
+app.post('/api/user/:id/buy-stars', async (req, res) => {
+    const { stars } = req.body; // number of stars to buy
+    const userId = req.params.id;
+
+    if (!BOT_TOKEN) return res.status(500).json({ error: 'Bot not configured' });
+
+    const packages = {
+        100: { label: '100 Stars', price: 100 },
+        250: { label: '250 Stars (+25 бонус)', price: 250 },
+        500: { label: '500 Stars (+75 бонус)', price: 500 },
+        1000: { label: '1000 Stars (+200 бонус)', price: 1000 },
+    };
+
+    const pkg = packages[stars];
+    if (!pkg) return res.status(400).json({ error: 'Invalid package' });
+
+    try {
+        const invoiceRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendInvoice`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: userId,
+                title: `Покупка ${pkg.label}`,
+                description: `Зачисление ${stars} Stars на баланс Easy Quest`,
+                payload: JSON.stringify({ userId, stars }),
+                currency: 'XTR', // Telegram Stars
+                prices: [{ label: pkg.label, amount: pkg.price }]
+            })
+        });
+        const invoiceData = await invoiceRes.json();
+        if (!invoiceData.ok) throw new Error(invoiceData.description);
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -530,24 +667,31 @@ app.post('/api/tasks/:id/approve', async (req, res) => {
                 data: { status: 'completed', completedAt: new Date() }
             });
 
-            // 2. Pay executor
+            // 2. Pay executor — earnedBalance = WITHDRAWABLE
             const executor = await tx.user.findUnique({ where: { id: task.executorId } });
 
             await tx.user.update({
                 where: { id: task.executorId },
-                data: { balance: { increment: task.reward } }
+                data: {
+                    balance: { increment: task.reward },
+                    earnedBalance: { increment: task.reward }, // withdrawable!
+                    tasksCompleted: { increment: 1 }           // unlock withdrawal eligibility
+                }
             });
 
             await tx.transaction.create({
                 data: { title: `Оплата: ${task.title}`, amount: task.reward, type: 'earn', userId: task.executorId }
             });
 
-            // Handle referral bonus (5% of original reward)
+            // Handle referral bonus (5% of original reward) — also withdrawable
             if (executor.referredById) {
                 const refBonus = Math.max(1, Math.round((task.reward / 0.9) * 0.05));
                 await tx.user.update({
                     where: { id: executor.referredById },
-                    data: { balance: { increment: refBonus } }
+                    data: {
+                        balance: { increment: refBonus },
+                        earnedBalance: { increment: refBonus } // referral bonus = withdrawable
+                    }
                 });
                 await tx.transaction.create({
                     data: { title: `Реф. бонус за ${task.title}`, amount: refBonus, type: 'earn', userId: executor.referredById }

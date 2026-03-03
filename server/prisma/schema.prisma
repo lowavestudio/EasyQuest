@@ -13,7 +13,10 @@ model User {
   username  String?
   photoUrl  String?
   role                 String   @default("executor") // 'executor' | 'customer'
-  balance              Int      @default(150)
+  balance              Int      @default(150) // total display balance
+  bonusBalance         Int      @default(150) // non-withdrawable: signup bonus, promos
+  earnedBalance        Int      @default(0)   // withdrawable: from tasks & purchases
+  tasksCompleted       Int      @default(0)   // required for withdrawal eligibility
   createdAt            DateTime @default(now())
   
   // Verification

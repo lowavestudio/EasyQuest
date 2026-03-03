@@ -1,10 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import {
-    Star, ArrowUpRight, Gift, Minus, RotateCcw, Plus,
-    ChevronRight, TrendingUp, TrendingDown, Wallet as WalletIcon, X
+    Star, ArrowUpRight, Gift, Plus,
+    ChevronRight, Wallet as WalletIcon, X
 } from 'lucide-react';
-import { useTonConnectUI } from '@tonconnect/ui-react';
 
 const PACKAGES = [
     { stars: 10, ton: '0.10', label: 'Стартовый', badge: null },
@@ -19,17 +18,17 @@ const TX_TYPE_META: Record<string, { label: string; color: string; bg: string; i
     spend: { label: 'Расход', color: 'var(--danger-color)', bg: 'rgba(239,68,68,0.1)', icon: '⬇' },
     refund: { label: 'Возврат', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: '↩' },
     topup: { label: 'Пополнение', color: 'var(--accent-color)', bg: 'var(--accent-light)', icon: '💳' },
+    withdraw: { label: 'Вывод', color: 'var(--warning-color)', bg: 'rgba(245,158,11,0.12)', icon: '💸' },
 };
 
 const Wallet = () => {
-    const { balance, transactions, topUp } = useAppStore();
-    const [tonConnectUI] = useTonConnectUI();
+    const { balance, user, transactions, buyStars, withdraw } = useAppStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [showTopUp, setShowTopUp] = useState(false);
+    const [showWithdraw, setShowWithdraw] = useState(false);
+    const [withdrawAmount, setWithdrawAmount] = useState('');
+    const [withdrawAddress, setWithdrawAddress] = useState('');
     const [processingPkg, setProcessingPkg] = useState<number | null>(null);
-
-    const earned = useMemo(() => transactions.filter(t => t.amount > 0).reduce((a, t) => a + t.amount, 0), [transactions]);
-    const spent = useMemo(() => Math.abs(transactions.filter(t => t.amount < 0).reduce((a, t) => a + t.amount, 0)), [transactions]);
 
     // Simple 7-day balance mini chart
     const chartData = useMemo(() => {
@@ -37,7 +36,6 @@ const Wallet = () => {
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dayStr = d.toDateString();
             const dayLabel = d.toLocaleDateString('ru-RU', { weekday: 'short' });
             // Sum up all transactions up to this day
             const runningBalance = transactions
@@ -59,26 +57,34 @@ const Wallet = () => {
             d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     };
 
-    const handleTopUp = async (stars: number, tonAmount: string, idx: number) => {
-        if (!tonConnectUI.connected) {
-            await tonConnectUI.openModal();
-            return;
-        }
+    const handleBuyStars = async (stars: number, idx: number) => {
         setIsProcessing(true);
         setProcessingPkg(idx);
         try {
-            const nanoAmount = (parseFloat(tonAmount) * 1_000_000_000).toString();
-            await tonConnectUI.sendTransaction({
-                validUntil: Math.floor(Date.now() / 1000) + 60,
-                messages: [{ address: 'UQB6mE_Uf-3-vS8P9p4P-G0-n7-G0-n7-G0-n7-G0-n7-G0n7', amount: nanoAmount }],
-            });
-            await topUp(stars);
+            await buyStars(stars);
             setShowTopUp(false);
         } catch (e) {
-            console.error('TON tx failed', e);
+            console.error('Failed to buy stars', e);
         } finally {
             setIsProcessing(false);
             setProcessingPkg(null);
+        }
+    };
+
+    const handleWithdraw = async () => {
+        const amt = parseInt(withdrawAmount);
+        if (isNaN(amt) || amt < 500) return;
+        if (!withdrawAddress) return;
+
+        setIsProcessing(true);
+        try {
+            await withdraw(amt, withdrawAddress);
+            setShowWithdraw(false);
+            setWithdrawAmount('');
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -111,13 +117,14 @@ const Wallet = () => {
                             <button
                                 className="wallet-action-btn"
                                 onClick={() => setShowTopUp(true)}
-                                style={{ flex: 1, background: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '12px', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', color: 'white', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+                                style={{ flex: 1, background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)', border: 'none', borderRadius: '12px', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
                             >
                                 <Plus size={17} /> Купить Stars
                             </button>
                             <button
                                 className="wallet-action-btn"
-                                style={{ flex: 1, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: 700, cursor: 'not-allowed' }}
+                                onClick={() => setShowWithdraw(true)}
+                                style={{ flex: 1, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', color: 'white', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
                             >
                                 <ArrowUpRight size={17} /> Вывести
                             </button>
@@ -125,21 +132,19 @@ const Wallet = () => {
                     </div>
                 </div>
 
-                {/* Stats Row */}
-                <div className="stats-row">
-                    <div className="stat-card" style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', marginBottom: '4px' }}>
-                            <TrendingUp size={14} color="var(--success-color)" />
-                            <span style={{ fontSize: '11px', color: 'var(--tg-theme-hint-color)', fontWeight: 600 }}>Заработано</span>
+                {/* Sub-balances Row */}
+                <div className="stats-row" style={{ marginTop: '0px' }}>
+                    <div className="stat-card" style={{ padding: '12px 14px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--tg-theme-hint-color)', fontWeight: 600, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Star size={12} fill="var(--warning-color)" color="var(--warning-color)" /> Доступно для вывода
                         </div>
-                        <div className="stat-value" style={{ color: 'var(--success-color)', fontSize: '22px' }}>{earned} ★</div>
+                        <div className="stat-value" style={{ fontSize: '18px', color: 'var(--tg-theme-text-color)' }}>{user?.earnedBalance ?? 0} ★</div>
                     </div>
-                    <div className="stat-card" style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', marginBottom: '4px' }}>
-                            <TrendingDown size={14} color="var(--danger-color)" />
-                            <span style={{ fontSize: '11px', color: 'var(--tg-theme-hint-color)', fontWeight: 600 }}>Потрачено</span>
+                    <div className="stat-card" style={{ padding: '12px 14px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--tg-theme-hint-color)', fontWeight: 600, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Gift size={12} color="#8b5cf6" /> Бонусы (для заданий)
                         </div>
-                        <div className="stat-value" style={{ color: 'var(--danger-color)', fontSize: '22px' }}>{spent} ★</div>
+                        <div className="stat-value" style={{ fontSize: '18px', color: 'var(--tg-theme-text-color)' }}>{user?.bonusBalance ?? 0} ★</div>
                     </div>
                 </div>
 
@@ -195,7 +200,7 @@ const Wallet = () => {
                                 {PACKAGES.map((pkg, idx) => (
                                     <button
                                         key={pkg.stars}
-                                        onClick={() => handleTopUp(pkg.stars, pkg.ton, idx)}
+                                        onClick={() => handleBuyStars(pkg.stars, idx)}
                                         disabled={isProcessing}
                                         style={{
                                             display: 'flex', alignItems: 'center', gap: '14px',
@@ -231,9 +236,6 @@ const Wallet = () => {
                                             <div style={{ fontWeight: 800, fontSize: '16px', color: 'var(--accent-color)' }}>
                                                 {processingPkg === idx ? '...' : `${pkg.ton} TON`}
                                             </div>
-                                            <div style={{ fontSize: '11px', color: 'var(--tg-theme-hint-color)' }}>
-                                                ≈ {(parseFloat(pkg.ton) * 4.5 * 100).toFixed(0)} ₽
-                                            </div>
                                         </div>
 
                                         <ChevronRight size={16} color="var(--tg-theme-hint-color)" />
@@ -242,8 +244,77 @@ const Wallet = () => {
                             </div>
 
                             <div style={{ marginTop: '14px', textAlign: 'center', fontSize: '12px', color: 'var(--tg-theme-hint-color)', lineHeight: 1.5 }}>
-                                Для оплаты требуется TON-кошелёк · Курс TON/₽ приблизительный
+                                Оплата происходит официально через Telegram (Telegram Stars).
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Withdraw Modal */}
+                {showWithdraw && (
+                    <div style={{
+                        position: 'fixed', inset: 0, zIndex: 200,
+                        background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+                        display: 'flex', alignItems: 'flex-end',
+                    }} onClick={(e) => e.target === e.currentTarget && setShowWithdraw(false)}>
+                        <div style={{
+                            width: '100%', background: 'var(--tg-theme-bg-color)',
+                            borderRadius: '24px 24px 0 0', padding: '20px 16px 32px',
+                            animation: 'fadeUp 0.25s ease',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--tg-theme-text-color)' }}>
+                                    💸 Вывод средств
+                                </div>
+                                <button onClick={() => setShowWithdraw(false)} style={{ background: 'var(--card-bg)', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                    <X size={16} color="var(--tg-theme-hint-color)" />
+                                </button>
+                            </div>
+
+                            {user && user.tasksCompleted < 3 ? (
+                                <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '14px', color: '#ef4444', fontSize: '14px', lineHeight: 1.5 }}>
+                                    <b>Внимание:</b> Для вывода средств необходимо выполнить минимум <b>3 задания</b>. Вы выполнили: {user.tasksCompleted}.
+                                    <br /><br />Это защита нашей платформы от накруток.
+                                </div>
+                            ) : user && user.earnedBalance < 500 ? (
+                                <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '14px', color: '#ef4444', fontSize: '14px', lineHeight: 1.5 }}>
+                                    <b>Внимание:</b> Минимальная сумма вывода — <b>500 заработанных Stars</b>. У вас: {user.earnedBalance} Stars.
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                    <div style={{ fontSize: '14px', color: 'var(--tg-theme-hint-color)' }}>
+                                        Доступно для вывода: <b style={{ color: 'var(--tg-theme-text-color)' }}>{user?.earnedBalance} ★</b>
+                                    </div>
+                                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)' }}>Сумма вывода (Star)</span>
+                                        <input
+                                            type="number"
+                                            placeholder="Минимум 500"
+                                            value={withdrawAmount}
+                                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                                            style={{ padding: '14px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--tg-theme-text-color)', fontSize: '16px', outline: 'none' }}
+                                        />
+                                    </label>
+                                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)' }}>Ваш TON кошелёк</span>
+                                        <input
+                                            type="text"
+                                            placeholder="EQD..."
+                                            value={withdrawAddress}
+                                            onChange={(e) => setWithdrawAddress(e.target.value)}
+                                            style={{ padding: '14px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--tg-theme-text-color)', fontSize: '16px', outline: 'none' }}
+                                        />
+                                    </label>
+                                    <button
+                                        className="tg-button"
+                                        style={{ marginTop: '10px' }}
+                                        onClick={handleWithdraw}
+                                        disabled={isProcessing || !withdrawAmount || !withdrawAddress || parseInt(withdrawAmount) < 500 || parseInt(withdrawAmount) > (user?.earnedBalance ?? 0)}
+                                    >
+                                        {isProcessing ? 'Обработка...' : 'Запросить вывод'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

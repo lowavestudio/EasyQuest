@@ -8,6 +8,9 @@ export interface User {
     username?: string;
     photoUrl?: string;
     balance: number;
+    bonusBalance: number;   // non-withdrawable (signup bonus)
+    earnedBalance: number;  // withdrawable (tasks + purchases)
+    tasksCompleted: number; // for withdrawal eligibility
     role: Role;
     rating: number;
     reviewCount: number;
@@ -54,7 +57,7 @@ export interface Transaction {
     id: number;
     title: string;
     amount: number;
-    type: 'earn' | 'bonus' | 'spend' | 'refund';
+    type: 'earn' | 'bonus' | 'spend' | 'refund' | 'topup' | 'withdraw';
     createdAt: string;
 }
 
@@ -98,7 +101,8 @@ interface AppState {
     refreshUser: () => Promise<void>;
     uploadPhoto: (file: File) => Promise<string | null>;
     logout: () => void;
-    topUp: (amount: number) => Promise<void>;
+    buyStars: (stars: number) => Promise<void>;
+    withdraw: (amount: number, walletAddress: string) => Promise<void>;
     submitVerification: (photoUrl: string) => Promise<void>;
 
     // Chat actions
@@ -160,20 +164,38 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ user: null, balance: 0, tasks: [], transactions: [], role: 'executor' });
     },
 
-    topUp: async (amount) => {
+    buyStars: async (stars) => {
         const { user } = get();
         if (!user) return;
         try {
-            const res = await fetch(`${API_URL}/user/${user.id}/topup`, {
+            const res = await fetch(`${API_URL}/user/${user.id}/buy-stars`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount })
+                body: JSON.stringify({ stars })
             });
             if (!res.ok) throw new Error();
-            await get().refreshUser();
-            get().notify(`Баланс пополнен на ${amount} ★`, 'success');
+            // Since this opens a Telegram invoice, we don't need a success toast right now.
+            // When payment is done, backend will receive the webhook/poll update.
         } catch (err) {
-            get().notify('Ошибка пополнения', 'error');
+            get().notify('Ошибка при создании счета', 'error');
+        }
+    },
+
+    withdraw: async (amount, walletAddress) => {
+        const { user } = get();
+        if (!user) return;
+        try {
+            const res = await fetch(`${API_URL}/user/${user.id}/withdraw`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, walletAddress })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Ошибка вывода');
+            await get().refreshUser();
+            get().notify(`Запрос на вывод ${amount} ★ отправлен!`, 'success');
+        } catch (err) {
+            get().notify((err as Error).message || 'Ошибка вывода', 'error');
         }
     },
 
