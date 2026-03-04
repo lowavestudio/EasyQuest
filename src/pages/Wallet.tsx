@@ -79,7 +79,7 @@ const Wallet = () => {
 
     const handleWithdraw = async () => {
         const amt = parseInt(withdrawAmount);
-        if (isNaN(amt) || amt < 500) return;
+        if (isNaN(amt) || amt < 100) return;
         if (!withdrawAddress) return;
 
         setIsProcessing(true);
@@ -281,7 +281,7 @@ const Wallet = () => {
                                 <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '14px', color: '#ef4444', fontSize: '14px', lineHeight: 1.5 }}>
                                     {walletT.withdraw_modal.min_tasks} {language === 'ru' ? 'Вы выполнили:' : 'You completed:'} {user.tasksCompleted}.
                                 </div>
-                            ) : user && user.earnedBalance < 10 ? (
+                            ) : user && user.earnedBalance < 100 ? (
                                 <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '14px', color: '#ef4444', fontSize: '14px', lineHeight: 1.5 }}>
                                     {walletT.withdraw_modal.min_amount} {language === 'ru' ? 'У вас:' : 'You have:'} {user.earnedBalance} {commonT.stars}.
                                 </div>
@@ -294,7 +294,7 @@ const Wallet = () => {
                                         <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)' }}>{walletT.withdraw_modal.amount_label}</span>
                                         <input
                                             type="number"
-                                            placeholder={language === 'ru' ? 'Минимум 500' : 'Min 500'}
+                                            placeholder={language === 'ru' ? 'Минимум 100' : 'Min 100'}
                                             value={withdrawAmount}
                                             onChange={(e) => setWithdrawAmount(e.target.value)}
                                             style={{ padding: '14px', borderRadius: '14px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--tg-theme-text-color)', fontSize: '16px', outline: 'none' }}

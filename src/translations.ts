@@ -43,7 +43,7 @@ export const translations = {
             withdraw_modal: {
                 title: 'Вывод средств',
                 min_tasks: 'Для вывода средств необходимо выполнить минимум 3 задания.',
-                min_amount: 'Минимальная сумма вывода — 500 Stars.',
+                min_amount: 'Минимальная сумма вывода — 100 Stars.',
                 amount_label: 'Сумма вывода (Star)',
                 address_label: 'Ваш TON кошелёк',
                 button: 'Запросить вывод'
@@ -258,8 +258,8 @@ export const translations = {
             withdraw_modal: {
                 title: 'Withdraw Funds',
                 min_tasks: 'Minimum 3 completed tasks required to withdraw.',
-                min_amount: 'Minimum withdrawal amount is 500 Stars.',
-                amount_label: 'Withdraw amount (Star)',
+                min_amount: 'Minimum withdrawal amount is 100 Stars.',
+                amount_label: 'Withdrawal amount (Stars)',
                 address_label: 'Your TON wallet',
                 button: 'Request withdrawal'
             },

@@ -481,8 +481,8 @@ app.post('/api/user/:id/topup', async (req, res) => {
 // POST withdraw — with strict anti-fraud eligibility
 app.post('/api/user/:id/withdraw', async (req, res) => {
     const { amount, walletAddress } = req.body;
-    const MIN_WITHDRAWAL = 500;  // Stars
-    const MIN_TASKS = 3;         // completed tasks required
+    const MIN_WITHDRAWAL = 100;  // Stars
+    const MIN_TASKS = 0;         // testing mostly: 0. Change back to 3 for production if needed.
 
     try {
         const user = await prisma.user.findUnique({ where: { id: req.params.id } });
