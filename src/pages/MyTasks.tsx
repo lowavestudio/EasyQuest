@@ -33,6 +33,7 @@ const MyTasks = () => {
 
     const mtT = t('my_tasks');
     const commonT = t('common');
+    const feedT = t('feed');
 
     const activeTasks = tasks.filter(t => t.status === 'accepted' || t.status === 'under_review');
     const historyTasks = tasks.filter(t =>
@@ -191,7 +192,7 @@ const MyTasks = () => {
                                                 background: catMeta.bg, color: catMeta.color,
                                             }}>
                                                 <CatIcon size={10} />
-                                                {catMeta.label}
+                                                {feedT.chips[(task.category || 'other') as keyof typeof feedT.chips] || catMeta.label}
                                             </span>
                                         </div>
                                         <div className="task-title">{task.title}</div>
@@ -285,7 +286,7 @@ const MyTasks = () => {
                                                 background: catMeta.bg, color: catMeta.color,
                                             }}>
                                                 <CatIcon size={10} />
-                                                {catMeta.label}
+                                                {feedT.chips[(task.category || 'other') as keyof typeof feedT.chips] || catMeta.label}
                                             </span>
                                             <span style={{
                                                 fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px',

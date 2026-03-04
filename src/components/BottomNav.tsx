@@ -4,7 +4,8 @@ import { Compass, ClipboardList, Wallet, UserRound } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
 const BottomNav = () => {
-    const { unreadCount, fetchUnreadCount, user } = useAppStore();
+    const { unreadCount, fetchUnreadCount, user, t } = useAppStore();
+    const navT = t('nav');
 
     useEffect(() => {
         if (user?.id) {
@@ -26,7 +27,7 @@ const BottomNav = () => {
             >
                 <span className="nav-pip" />
                 <Compass size={22} strokeWidth={2.5} />
-                <span>Лента</span>
+                <span>{navT.feed}</span>
             </NavLink>
 
             <NavLink
@@ -40,7 +41,7 @@ const BottomNav = () => {
                         <div className="nav-badge">{unreadCount > 9 ? '9+' : unreadCount}</div>
                     )}
                 </div>
-                <span>Задания</span>
+                <span>{navT.tasks}</span>
             </NavLink>
 
             <NavLink
@@ -49,7 +50,7 @@ const BottomNav = () => {
             >
                 <span className="nav-pip" />
                 <Wallet size={22} strokeWidth={2.5} />
-                <span>Кошелёк</span>
+                <span>{navT.wallet}</span>
             </NavLink>
 
             <NavLink
@@ -58,7 +59,7 @@ const BottomNav = () => {
             >
                 <span className="nav-pip" />
                 <UserRound size={22} strokeWidth={2.5} />
-                <span>Профиль</span>
+                <span>{navT.profile}</span>
             </NavLink>
         </nav>
     );
