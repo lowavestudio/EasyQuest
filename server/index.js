@@ -481,8 +481,8 @@ app.post('/api/user/:id/topup', async (req, res) => {
 // POST withdraw — with strict anti-fraud eligibility
 app.post('/api/user/:id/withdraw', async (req, res) => {
     const { amount, walletAddress } = req.body;
-    const MIN_WITHDRAWAL = 10;  // lowered for testing
-    const MIN_TASKS = 0;         // lowered for testing
+    const MIN_WITHDRAWAL = 500;  // Stars
+    const MIN_TASKS = 3;         // completed tasks required
 
     try {
         const user = await prisma.user.findUnique({ where: { id: req.params.id } });
@@ -705,46 +705,38 @@ app.post('/api/upload', upload.single('photo'), async (req, res) => {
 
 // POST create task (10% platform commission)
 app.post('/api/tasks', async (req, res) => {
-    const { title, description, reward, lat, lng, customerId, category, address, paymentType, cashAmount } = req.body;
+    const { title, description, reward, lat, lng, customerId, category, address } = req.body;
     try {
         const result = await prisma.$transaction(async (tx) => {
             const user = await tx.user.findUnique({ where: { id: customerId } });
+            if (!user || user.balance < reward) throw new Error('Insufficient balance');
 
-            // Calculate costs depending on payment type
-            const isCash = paymentType === 'cash';
-            const cost = isCash ? 20 : reward;
-
-            if (!user || user.balance < cost) throw new Error('Insufficient balance');
-
-            const commission = isCash ? 20 : Math.ceil(reward * PLATFORM_COMMISSION); // Flat 20 Stars or 10%
-            const executorReward = isCash ? 0 : reward - commission;
+            const commission = Math.ceil(reward * PLATFORM_COMMISSION); // 10% rounded up
+            const executorReward = reward - commission;
 
             const task = await tx.task.create({
                 data: {
                     title, description, reward: executorReward, lat, lng, customerId,
-                    status: 'available', category: category || 'other', address: address || '',
-                    paymentType: paymentType || 'stars',
-                    cashAmount: isCash ? cashAmount : null
+                    status: 'available', category: category || 'other', address: address || ''
                 }
             });
 
             // Calculate exact deduction: prioritize spending bonus balance first!
-            const deductFromBonus = Math.min(user.bonusBalance, cost);
-            const deductFromEarned = cost - deductFromBonus;
+            const deductFromBonus = Math.min(user.bonusBalance, reward);
+            const deductFromEarned = reward - deductFromBonus;
 
             // Deduct full amount from customer
             await tx.user.update({
                 where: { id: customerId },
                 data: {
-                    balance: { decrement: cost },
+                    balance: { decrement: reward },
                     bonusBalance: { decrement: deductFromBonus },
                     earnedBalance: { decrement: deductFromEarned }
                 }
             });
 
-            const transactionTitle = isCash ? `Размещение (Кеш): ${title}` : `Создание: ${title}`;
             await tx.transaction.create({
-                data: { title: transactionTitle, amount: -cost, type: 'spend', userId: customerId }
+                data: { title: `Создание: ${title}`, amount: -reward, type: 'spend', userId: customerId }
             });
 
             // --- Geolocation Push Notification ---
@@ -773,9 +765,8 @@ app.post('/api/tasks', async (req, res) => {
                 for (const u of nearbyUsers) {
                     const dist = haversine(lat, lng, u.lastKnownLat, u.lastKnownLng);
                     if (dist <= 5) { // Notify users within 5km
-                        const rewardText = isCash ? `${cashAmount} (Наличные)` : `${executorReward} Stars`;
                         await sendNotification(u.id,
-                            `📍 <b>Новое задание рядом!</b>\n\n"${title}"\nНаграда: <b>${rewardText}</b>\nРасстояние: <b>~${dist.toFixed(1)} км</b>\n\nУспейте выполнить первым! @easyquestwork_bot`
+                            `📍 <b>Новое задание рядом!</b>\n\n"${title}"\nНаграда: <b>${executorReward} Stars</b>\nРасстояние: <b>~${dist.toFixed(1)} км</b>\n\nУспейте выполнить первым! @easyquestwork_bot`
                         );
                     }
                 }
@@ -784,8 +775,7 @@ app.post('/api/tasks', async (req, res) => {
             }
 
             // Log platform commission (informational)
-            const logMsg = isCash ? `[Commission] Cash Task #${task.id}: 20★ (Fee)` : `[Commission] Task #${task.id}: ${commission}★ → ${PLATFORM_WALLET}`;
-            console.log(logMsg);
+            console.log(`[Commission] Task #${task.id}: ${commission}★ → ${PLATFORM_WALLET}`);
 
             return task;
         });
