@@ -314,7 +314,7 @@ const Wallet = () => {
                                         className="tg-button"
                                         style={{ marginTop: '10px' }}
                                         onClick={handleWithdraw}
-                                        disabled={isProcessing || !withdrawAmount || !withdrawAddress || parseInt(withdrawAmount) < 500 || parseInt(withdrawAmount) > (user?.earnedBalance ?? 0)}
+                                        disabled={isProcessing || !withdrawAmount || !withdrawAddress || parseInt(withdrawAmount) < 100 || parseInt(withdrawAmount) > (user?.earnedBalance ?? 0)}
                                     >
                                         {isProcessing ? (language === 'ru' ? 'Обработка...' : 'Processing...') : walletT.withdraw_modal.button}
                                     </button>
