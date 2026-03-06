@@ -201,7 +201,7 @@ async function handleMainBotCommand(update) {
                     balance: { increment: stars },
                     earnedBalance: { increment: stars }, // purchased = withdrawable
                     transactions: {
-                        create: { title: `Покупка ${stars} Stars`, amount: stars, type: 'bonus', userId }
+                        create: { title: `Покупка ${stars} Stars`, amount: stars, type: 'topup', userId }
                     }
                 }
             });

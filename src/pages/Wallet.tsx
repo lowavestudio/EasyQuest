@@ -277,7 +277,7 @@ const Wallet = () => {
                                 </button>
                             </div>
 
-                            {user && user.tasksCompleted < 0 ? (
+                            {user && user.tasksCompleted < 3 ? (
                                 <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '14px', color: '#ef4444', fontSize: '14px', lineHeight: 1.5 }}>
                                     {walletT.withdraw_modal.min_tasks} {language === 'ru' ? 'Вы выполнили:' : 'You completed:'} {user.tasksCompleted}.
                                 </div>

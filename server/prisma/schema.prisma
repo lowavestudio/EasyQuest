@@ -84,7 +84,7 @@ model Transaction {
   id        Int      @id @default(autoincrement())
   title     String
   amount    Int
-  type      String   // 'earn', 'bonus', 'spend', 'refund'
+  type      String   // 'earn', 'bonus', 'spend', 'refund', 'topup', 'withdraw'
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
