@@ -467,7 +467,7 @@ app.post('/api/user/:id/topup', async (req, res) => {
                     create: {
                         title: 'Пополнение баланса',
                         amount: Number(amount),
-                        type: 'bonus'
+                        type: 'topup'
                     }
                 }
             }

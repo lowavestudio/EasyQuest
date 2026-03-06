@@ -199,7 +199,7 @@ const Feed = () => {
                     <TileLayer
                         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                     />
-                    {tasks.map(task => (
+                    {filteredTasks.map(task => (
                         <Marker
                             key={task.id}
                             position={[task.lat, task.lng]}
