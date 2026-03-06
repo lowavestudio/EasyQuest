@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
+import analytics from '@telegram-apps/analytics';
 import { translations } from './translations';
 import type { Language } from './translations';
 import Feed from './pages/Feed';
@@ -39,6 +40,16 @@ function App() {
       if (tg) {
         tg.expand();
         tg.ready();
+
+        // Initialize Analytics
+        try {
+          analytics.init({
+            token: 'easyquest', // Substitute with real token from @TMA_Analytics_bot if needed
+            appName: 'easy-quest',
+          });
+        } catch (err) {
+          console.error('Analytics init error', err);
+        }
 
         // Setup theme based on Telegram
         document.body.className = tg.colorScheme;

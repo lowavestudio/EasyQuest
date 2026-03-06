@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@telegram-apps/analytics": "^1.6.4",
     "@tonconnect/ui-react": "^2.4.2",
     "@types/leaflet": "^1.9.21",
     "leaflet": "^1.9.4",

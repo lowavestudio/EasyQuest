@@ -109,6 +109,14 @@ const Profile = () => {
                         <ChevronRight size={18} />
                     </div>
 
+                    <a href="https://t.me/easyquestwork_group" target="_blank" rel="noopener noreferrer" className="settings-row" style={{ textDecoration: 'none' }}>
+                        <div className="settings-row-left">
+                            <Users size={18} color="#3b82f6" />
+                            <span>{profileT.community}</span>
+                        </div>
+                        <ChevronRight size={18} />
+                    </a>
+
                     <div className="settings-row" onClick={() => navigate('/verification')}>
                         <div className="settings-row-left">
                             <ShieldCheck size={18} color="var(--success-color)" />
