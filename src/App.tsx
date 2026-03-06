@@ -61,10 +61,10 @@ function App() {
         const tgUser = tg.initDataUnsafe?.user;
         if (tgUser) {
           // Detect and set language
-          if (tg.initDataUnsafe?.user?.language_code === 'en') {
-            setLanguage('en');
-          } else {
+          if (tg.initDataUnsafe?.user?.language_code === 'ru') {
             setLanguage('ru');
+          } else {
+            setLanguage('en');
           }
 
           await login({

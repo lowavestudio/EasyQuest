@@ -217,18 +217,27 @@ async function handleMainBotCommand(update) {
 
     // /start command for all users
     if (text.startsWith('/start')) {
+        const lang = msg.from?.language_code === 'ru' ? 'ru' : 'en';
+
         const keyboard = {
             inline_keyboard: [[
-                { text: "🚀 Запустить Easy Quest", web_app: { url: "https://easyquesteasy-quest.onrender.com" } }
+                {
+                    text: lang === 'ru' ? "🚀 Запустить Easy Quest" : "🚀 Launch Easy Quest",
+                    web_app: { url: "https://easyquesteasy-quest.onrender.com" }
+                }
             ]]
         };
+
+        const textRu = `👋 <b>Добро пожаловать в Easy Quest!</b>\n\nЭто биржа простых заданий в вашем любимом мессенджере. Здесь вы можете:\n\n✨ <b>Зарабатывать Stars</b>, выполняя быстрые и легкие поручения.\n🔥 <b>Создавать задания</b> и находить исполнителей за пару минут.\n💳 <b>Выводить заработок</b> прямо на свой TON-кошелек.\n\n🎁 <i>При регистрации вы получите бонус 150 Stars!</i>\n\n👇 Нажмите кнопку ниже, чтобы запустить приложение.`;
+        const textEn = `👋 <b>Welcome to Easy Quest!</b>\n\nThis is a simple task marketplace in your favorite messenger. Here you can:\n\n✨ <b>Earn Stars</b> by completing quick and easy tasks.\n🔥 <b>Create tasks</b> and find executors in minutes.\n💳 <b>Withdraw earnings</b> directly to your TON wallet.\n\n🎁 <i>Get a 150 Stars bonus upon registration!</i>\n\n👇 Click the button below to launch the app.`;
+
         try {
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     chat_id: msg.chat.id,
-                    text: `👋 <b>Добро пожаловать в Easy Quest!</b>\n\nЭто биржа простых заданий в вашем любимом мессенджере. Здесь вы можете:\n\n✨ <b>Зарабатывать Stars</b>, выполняя быстрые и легкие поручения.\n🔥 <b>Создавать задания</b> и находить исполнителей за пару минут.\n💳 <b>Выводить заработок</b> прямо на свой TON-кошелек.\n\n🎁 <i>При регистрации вы получите бонус 150 Stars!</i>\n\n👇 Нажмите кнопку ниже, чтобы запустить приложение.`,
+                    text: lang === 'ru' ? textRu : textEn,
                     parse_mode: 'HTML',
                     reply_markup: keyboard
                 })
