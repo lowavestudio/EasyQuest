@@ -58,37 +58,37 @@ async function sendNotification(chatId, message) {
 // ─── Support Bot Auto-Responder ───────────────────────────────────────────────
 const SUPPORT_FAQ = [
     {
-        keywords: ['stars', 'звезд', 'баланс', 'пополнить', 'купить', 'кошелек', 'кошелёк', 'ton'],
-        answer: `💰 <b>Stars и кошелёк</b>\n\nStars — это внутренняя валюта Easy Quest.\n\n• При регистрации вы получаете <b>150 Stars</b> бесплатно\n• Пополнить баланс можно через <b>Кошелёк → Купить Stars</b>, подключив TON-кошелёк\n• 1 Star ≈ 0.01 TON ≈ 0.45₽\n\nОткройте приложение: @easyquestwork_bot`
+        keywords: [/^\/start$/i, /привет/i, /^hi$/i, /^hello$/i, /^start$/i, /помощь/i, /help/i],
+        answer: `👋 <b>Привет! Я бот поддержки Easy Quest.</b>\n\nЗдесь вы можете получить ответы на частые вопросы или связаться с командой проекта.\n\n📌 <b>Основные темы:</b>\n• Узнать о <b>балансе и Stars</b> — напишите <i>«баланс»</i>\n• Узнать, <b>как принять задание</b> — напишите <i>«принять задание»</i>\n• Узнать, <b>как создать задание</b> — напишите <i>«создать задание»</i>\n• Как <b>сдать отчёт</b> — напишите <i>«отчет»</i>\n• О <b>выводе средств</b> — напишите <i>«вывод»</i>\n• О <b>рейтинге</b> — напишите <i>«рейтинг»</i>\n\nЕсли ваш вопрос уникален, просто опишите его здесь, и живой оператор ответит вам в порядке очереди!`
     },
     {
-        keywords: ['задание', 'задач', 'принять', 'найти', 'выполнить', 'задан'],
-        answer: `📋 <b>Как принять задание</b>\n\n1. Откройте <b>Лента</b> в приложении\n2. Нажмите на задание на карте или в списке\n3. Нажмите <b>«Принять задание»</b>\n4. Выполните его и загрузите фото\n5. После одобрения заказчиком Stars поступят на баланс\n\nОткройте приложение: @easyquestwork_bot`
+        keywords: [/stars/i, /звезд/i, /баланс/i, /пополнить/i, /купить/i, /\bton\b/i, /кошелек/i, /кошелёк/i],
+        answer: `💰 <b>Stars и кошелёк (баланс)</b>\n\n<b>Stars</b> — это внутренняя валюта Easy Quest (1 Star ≈ 0.01 TON).\n\n• При регистрации вы получаете <b>бонус 150 Stars</b>.\n• Пополнить баланс можно в приложении: перейдите в <b>Профиль</b> → <b>Кошелёк</b> → нажмите <b>«Купить Stars»</b> через привязанный TON-кошелёк.\n• Используйте Stars для оплаты создаваемых вами заданий.\n\n➡️ Открыть приложение: @easyquestwork_bot`
     },
     {
-        keywords: ['создать', 'опублик', 'заказчик', 'разместить', 'новое задание'],
-        answer: `🛠 <b>Как создать задание (для заказчиков)</b>\n\n1. В Профиле переключитесь на роль <b>«Заказчик»</b>\n2. На Ленте нажмите кнопку <b>«+»</b> на карте\n3. Заполните: название, описание, адрес, вознаграждение\n4. Нажмите <b>«Опубликовать»</b>\n\nСтоимость блокируется с баланса и вернётся при отмене.\n\nОткройте приложение: @easyquestwork_bot`
+        keywords: [/(создать|разместить|опубликовать|добавить).*(задан|заказ)/i, /как заказчик/i, /новое задание/i],
+        answer: `🛠 <b>Как создать задание (для Заказчиков)</b>\n\n1. В <b>Профиле</b> переключите свою роль на <b>«Заказчик»</b>.\n2. Откройте <b>Ленту</b> и нажмите синюю кнопку <b>«+»</b> на карте.\n3. Укажите: название, описание того, что нужно сделать, адрес (маркер на карте) и вознаграждение (в Stars).\n4. Нажмите <b>«Опубликовать»</b>.\n\n<i>Сумма вознаграждения временно блокируется на вашем балансе и будет возвращена, если вы отмените задание.</i>\n\n➡️ Открыть приложение: @easyquestwork_bot`
     },
     {
-        keywords: ['фото', 'загрузить', 'отчет', 'отчёт', 'сдать', 'доказ'],
-        answer: `📸 <b>Как сдать задание</b>\n\n1. Выполните задание на месте\n2. Откройте задание в разделе <b>«Задания → Активные»</b>\n3. Нажмите <b>«Сдать задание»</b>\n4. Сделайте чёткое фото на месте выполнения\n5. Заказчик проверит и одобрит — Stars сразу придут вам\n\nОткройте приложение: @easyquestwork_bot`
+        keywords: [/(принять|взять|найти|выполнять|поиск).*(задан|работ)/i],
+        answer: `📋 <b>Как принять задание (для Исполнителей)</b>\n\n1. Откройте вкладку <b>Лента</b> в приложении.\n2. Выберите подходящее задание на карте или в списке.\n3. Внимательно прочитайте условия и нажмите <b>«Принять задание»</b>.\n4. Отправляйтесь на указанное место для выполнения.\n5. После выполнения загрузите фото-доказательство. Заказчик проверит его, и Stars поступят на ваш баланс.\n\n➡️ Открыть приложение: @easyquestwork_bot`
     },
     {
-        keywords: ['рейтинг', 'отзыв', 'оценк', 'репутац'],
-        answer: `⭐ <b>Рейтинг и отзывы</b>\n\nВаш рейтинг (от 1.0 до 5.0★) формируется из оценок заказчиков после каждого выполненного задания.\n\nВысокий рейтинг = больше доверия = больше заданий.\n\nВсе отзывы видны в вашем профиле.\n\nОткройте приложение: @easyquestwork_bot`
+        keywords: [/сдать/i, /отчет/i, /отчёт/i, /фото/i, /доказ/i, /загрузить/i],
+        answer: `📸 <b>Как сдать выполненное задание</b>\n\n1. Выполните все требования заказчика на месте.\n2. В приложении перейдите в <b>«Задания → Активные»</b>.\n3. Откройте карточку задания и нажмите <b>«Сдать задание»</b>.\n4. Прикрепите чёткое фото, подтверждающее выполнение работы.\n5. Ожидайте проверки заказчиком. Как только он одобрит — вознаграждение будет зачислено вам автоматически.\n\n➡️ Открыть приложение: @easyquestwork_bot`
     },
     {
-        keywords: ['верификац', 'подтвержд', 'значок', 'проверк личности'],
-        answer: `✅ <b>Верификация</b>\n\nВерификация подтверждает вашу личность и повышает доверие заказчиков. Верифицированные пользователи имеют приоритет на задания.\n\nФункция верификации в разработке и появится в ближайшем обновлении. Следите за новостями: @EasyQuestNews`
+        keywords: [/рейтинг/i, /отзыв/i, /оценк/i, /репутац/i],
+        answer: `⭐ <b>Рейтинг и отзывы</b>\n\nВ системе используется рейтинг от 1.0 до 5.0★. Он формируется из оценок, которые заказчики ставят вам после подтверждения выполнения задания.\n\nЧем выше ваш рейтинг — тем выше доверие к вам, и тем чаще заказчики будут выбирать вас на свои задания. Относитесь к заданиям ответственно!\n\n➡️ Открыть приложение: @easyquestwork_bot`
     },
     {
-        keywords: ['вывод', 'вывести', 'обмен', 'получить деньги', 'снять'],
-        answer: `💸 <b>Вывод Stars</b>\n\nВывод Stars в TON находится в разработке и появится в ближайшем обновлении.\n\nСледите за анонсами: @EasyQuestNews`
+        keywords: [/верификац/i, /подтвержд.*личност/i, /значок/i, /паспорт/i],
+        answer: `✅ <b>Верификация (Значок доверия)</b>\n\nВерификация (синяя галочка рядом с именем) подтверждает вашу личность. Заказчики больше доверяют верифицированным исполнителям и дают им приоритет.\n\nЧтобы пройти верификацию, в настройках профиля отправьте фотографию вашего удостоверения личности (студенческий, права или паспорт). Данные проверяются вручную модераторами платформы.\n\n➡️ Открыть приложение: @easyquestwork_bot`
     },
     {
-        keywords: ['привет', 'здравствуй', 'hi', 'hello', 'хай', 'добрый', 'помог', 'помощь'],
-        answer: `👋 <b>Привет! Я бот поддержки Easy Quest.</b>\n\nЧем могу помочь? Напишите ваш вопрос — я отвечу на популярные темы:\n\n• Stars и баланс\n• Как принять задание\n• Как создать задание\n• Как сдать отчёт\n• Рейтинг и отзывы\n• Вывод средств\n\nЕсли я не смогу помочь — передам ваш вопрос команде!`
-    },
+        keywords: [/вывод/i, /вывести/i, /снять/i, /обмен/i, /получить.*ton/i, /получить.*деньги/i],
+        answer: `💸 <b>Вывод средств на TON Кошелёк</b>\n\nВывод Stars доступен прямо в приложении!\nДля вывода необходимо иметь <b>минимум 100 Stars</b> на заработанном балансе (бонусные Stars за регистрацию не выводятся).\n\nПерейдите в <b>Профиль → Кошелёк → Вывести</b> и укажите ваш адрес TON. Вывод обрабатывается автоматически.\n\n➡️ Открыть приложение: @easyquestwork_bot`
+    }
 ];
 
 async function sendSupportMessage(chatId, text) {
@@ -108,13 +108,13 @@ async function handleSupportUpdate(update) {
     const msg = update.message || update.edited_message;
     if (!msg || !msg.text) return;
 
-    const text = msg.text.toLowerCase();
+    const text = msg.text;
     const chatId = msg.chat.id;
     const userName = msg.from?.first_name || 'Пользователь';
 
-    // Find matching FAQ entry
-    const match = SUPPORT_FAQ.find(entry =>
-        entry.keywords.some(kw => text.includes(kw))
+    // Find matching FAQ entry using Regex
+    let match = SUPPORT_FAQ.find(entry =>
+        entry.keywords.some(kw => kw.test(text))
     );
 
     if (match) {
@@ -220,16 +220,34 @@ async function handleMainBotCommand(update) {
         const lang = msg.from?.language_code === 'ru' ? 'ru' : 'en';
 
         const keyboard = {
-            inline_keyboard: [[
-                {
-                    text: lang === 'ru' ? "🚀 Запустить Easy Quest" : "🚀 Launch Easy Quest",
-                    web_app: { url: "https://easyquesteasy-quest.onrender.com" }
-                }
-            ]]
+            inline_keyboard: [
+                [
+                    {
+                        text: lang === 'ru' ? "🚀 Запустить Easy Quest" : "🚀 Launch Easy Quest",
+                        web_app: { url: "https://easyquesteasy-quest.onrender.com" }
+                    }
+                ],
+                [
+                    {
+                        text: lang === 'ru' ? "📢 Наш канал" : "📢 Our Channel",
+                        url: "https://t.me/EasyQuestNews"
+                    },
+                    {
+                        text: lang === 'ru' ? "💬 Комьюнити" : "💬 Community",
+                        url: "https://t.me/easyquestwork_group"
+                    }
+                ],
+                [
+                    {
+                        text: lang === 'ru' ? "🎧 Поддержка" : "🎧 Support",
+                        url: "https://t.me/EasyQuestSupportBot"
+                    }
+                ]
+            ]
         };
 
-        const textRu = `👋 <b>Добро пожаловать в Easy Quest!</b>\n\nЭто биржа простых заданий в вашем любимом мессенджере. Здесь вы можете:\n\n✨ <b>Зарабатывать Stars</b>, выполняя быстрые и легкие поручения.\n🔥 <b>Создавать задания</b> и находить исполнителей за пару минут.\n💳 <b>Выводить заработок</b> прямо на свой TON-кошелек.\n\n🎁 <i>При регистрации вы получите бонус 150 Stars!</i>\n\n👇 Нажмите кнопку ниже, чтобы запустить приложение.`;
-        const textEn = `👋 <b>Welcome to Easy Quest!</b>\n\nThis is a simple task marketplace in your favorite messenger. Here you can:\n\n✨ <b>Earn Stars</b> by completing quick and easy tasks.\n🔥 <b>Create tasks</b> and find executors in minutes.\n💳 <b>Withdraw earnings</b> directly to your TON wallet.\n\n🎁 <i>Get a 150 Stars bonus upon registration!</i>\n\n👇 Click the button below to launch the app.`;
+        const textRu = `👋 <b>Добро пожаловать в Easy Quest!</b>\n\nЭто биржа простых заданий в вашем любимом мессенджере. Здесь вы можете:\n\n✨ <b>Зарабатывать Stars</b>, выполняя быстрые и легкие поручения.\n🔥 <b>Создавать задания</b> и находить исполнителей за пару минут.\n💳 <b>Выводить заработок</b> прямо на свой TON-кошелек.\n\n🎁 <i>При регистрации вы получите бонус 150 Stars!</i>\n\n👇 Нажмите кнопку ниже, чтобы запустить приложение. Присоединяйтесь к нашему каналу и чату, чтобы быть в курсе новостей!`;
+        const textEn = `👋 <b>Welcome to Easy Quest!</b>\n\nThis is a simple task marketplace in your favorite messenger. Here you can:\n\n✨ <b>Earn Stars</b> by completing quick and easy tasks.\n🔥 <b>Create tasks</b> and find executors in minutes.\n💳 <b>Withdraw earnings</b> directly to your TON wallet.\n\n🎁 <i>Get a 150 Stars bonus upon registration!</i>\n\n👇 Click the button below to launch the app. Join our channel and community to stay updated!`;
 
         try {
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -609,16 +627,40 @@ app.post('/api/user/:id/buy-stars', async (req, res) => {
     }
 });
 
-// GET tasks
+// GET tasks (with Geofencing)
 app.get('/api/tasks', async (req, res) => {
     try {
-        const tasks = await prisma.task.findMany({
+        const { lat, lng } = req.query;
+        let tasks = await prisma.task.findMany({
             where: { status: 'available' },
             orderBy: { createdAt: 'desc' },
             include: {
                 customer: { select: { id: true, firstName: true, photoUrl: true, rating: true, verificationStatus: true } }
             }
         });
+
+        // If user coordinates provided, filter to within 50 kilometers
+        if (lat && lng) {
+            const userLat = parseFloat(lat);
+            const userLng = parseFloat(lng);
+            const maxDistance = 50; // km
+
+            const haversine = (lat1, lon1, lat2, lon2) => {
+                const R = 6371; // km
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            };
+
+            tasks = tasks.filter(task => {
+                const dist = haversine(userLat, userLng, task.lat, task.lng);
+                return dist <= maxDistance;
+            });
+        }
+
         res.json(tasks);
     } catch (err) {
         res.status(500).json({ error: err.message });

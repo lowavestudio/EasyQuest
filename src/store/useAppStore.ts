@@ -284,8 +284,13 @@ export const useAppStore = create<AppState>()(
             },
 
             fetchTasks: async () => {
+                const { userLocation } = get();
                 try {
-                    const res = await fetch(`${API_URL}/tasks`);
+                    let url = `${API_URL}/tasks`;
+                    if (userLocation) {
+                        url += `?lat=${userLocation[0]}&lng=${userLocation[1]}`;
+                    }
+                    const res = await fetch(url);
                     const tasks = await res.json();
                     set({ tasks });
                 } catch (err) {

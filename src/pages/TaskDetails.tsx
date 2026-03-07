@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, MapPin, Clock, Info, CheckCircle2, XCircle, Star, MessageSquare, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Upload, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, MapPin, Clock, Info, CheckCircle2, XCircle, Star, MessageSquare, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Upload, ShieldCheck, Navigation } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -221,6 +221,36 @@ const TaskDetails = () => {
                             </span>
                         </div>
                     )}
+                </div>
+
+                {/* Built-in Route / Navigate button */}
+                <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                    <a
+                        href={`https://yandex.ru/maps/?rtext=~${task.lat},${task.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                            background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px',
+                            padding: '10px', fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)', textDecoration: 'none'
+                        }}
+                    >
+                        <Navigation size={15} color="var(--accent-color)" />
+                        {language === 'ru' ? 'Маршрут (Яндекс)' : 'Route (Yandex)'}
+                    </a>
+                    <a
+                        href={`https://maps.google.com/?daddr=${task.lat},${task.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                            background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px',
+                            padding: '10px', fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)', textDecoration: 'none'
+                        }}
+                    >
+                        <Navigation size={15} color="#4285F4" />
+                        {language === 'ru' ? 'Google Карты' : 'Google Maps'}
+                    </a>
                 </div>
 
                 {/* Proof photo */}
