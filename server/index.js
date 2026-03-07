@@ -827,8 +827,9 @@ app.post('/api/tasks', async (req, res) => {
                 for (const u of nearbyUsers) {
                     const dist = haversine(lat, lng, u.lastKnownLat, u.lastKnownLng);
                     if (dist <= 5) { // Notify users within 5km
+                        const rewardStr = pType === 'cash' ? cashAmount : `${executorReward} Stars`;
                         await sendNotification(u.id,
-                            `📍 <b>Новое задание рядом!</b>\n\n"${title}"\nНаграда: <b>${executorReward} Stars</b>\nРасстояние: <b>~${dist.toFixed(1)} км</b>\n\nУспейте выполнить первым! @easyquestwork_bot`
+                            `📍 <b>Новое задание рядом!</b>\n\n"${title}"\nНаграда: <b>${rewardStr}</b>\nРасстояние: <b>~${dist.toFixed(1)} км</b>\n\nУспейте выполнить первым! @easyquestwork_bot`
                         );
                     }
                 }
@@ -837,7 +838,8 @@ app.post('/api/tasks', async (req, res) => {
             }
 
             // Log platform commission (informational)
-            console.log(`[Commission] Task #${task.id}: ${commission}★ → ${PLATFORM_WALLET}`);
+            const logFee = pType === 'cash' ? 20 : Math.ceil(reward * PLATFORM_COMMISSION);
+            console.log(`[Commission] Task #${task.id}: ${logFee}★ → Platform`);
 
             return task;
         });

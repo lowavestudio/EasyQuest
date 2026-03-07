@@ -74,7 +74,7 @@ const Feed = () => {
         return R * c;
     };
 
-    const centerPosition: [number, number] = [51.505, -0.09];
+    const centerPosition: [number, number] = [55.7558, 37.6173];
 
     const filteredTasks = (tasks || []).map(task => {
         let distance = null;
@@ -121,7 +121,7 @@ const Feed = () => {
             },
             () => {
                 setIsLocating(false);
-                setUserLocation([51.51, -0.12]);
+                setUserLocation([55.7558, 37.6173]);
             },
             { timeout: 5000, enableHighAccuracy: true }
         );

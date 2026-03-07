@@ -98,7 +98,7 @@ const CreateTask = () => {
     ];
 
     // Location state
-    const defaultPos: [number, number] = userLocation ?? [51.505, -0.09];
+    const defaultPos: [number, number] = userLocation ?? [55.7558, 37.6173];
     const [markerPos, setMarkerPos] = useState<[number, number]>(defaultPos);
     const [flyToPos, setFlyToPos] = useState<[number, number] | null>(null);
     const [address, setAddress] = useState('');
