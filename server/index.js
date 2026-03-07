@@ -754,40 +754,51 @@ app.post('/api/upload', upload.single('photo'), async (req, res) => {
     }
 });
 
-// POST create task (10% platform commission)
+// POST create task (10% platform commission or fixed fee for cash-payments)
 app.post('/api/tasks', async (req, res) => {
-    const { title, description, reward, lat, lng, customerId, category, address } = req.body;
+    const { title, description, reward, lat, lng, customerId, category, address, paymentType, cashAmount } = req.body;
     try {
         const result = await prisma.$transaction(async (tx) => {
             const user = await tx.user.findUnique({ where: { id: customerId } });
-            if (!user || user.balance < reward) throw new Error('Insufficient balance');
 
-            const commission = Math.ceil(reward * PLATFORM_COMMISSION); // 10% rounded up
-            const executorReward = reward - commission;
+            const pType = paymentType === 'cash' ? 'cash' : 'stars';
+            let totalDeduction = reward;
+            let executorReward = 0;
+
+            if (pType === 'cash') {
+                totalDeduction = 20; // Fixed listing fee in Stars
+                executorReward = 0;  // Executor gets paid in cash, 0 Stars
+            } else {
+                const commission = Math.ceil(reward * PLATFORM_COMMISSION); // 10% rounded up
+                executorReward = reward - commission;
+            }
+
+            if (!user || user.balance < totalDeduction) throw new Error('Insufficient balance');
 
             const task = await tx.task.create({
                 data: {
                     title, description, reward: executorReward, lat, lng, customerId,
-                    status: 'available', category: category || 'other', address: address || ''
+                    status: 'available', category: category || 'other', address: address || '',
+                    paymentType: pType, cashAmount: pType === 'cash' ? cashAmount : null
                 }
             });
 
             // Calculate exact deduction: prioritize spending bonus balance first!
-            const deductFromBonus = Math.min(user.bonusBalance, reward);
-            const deductFromEarned = reward - deductFromBonus;
+            const deductFromBonus = Math.min(user.bonusBalance, totalDeduction);
+            const deductFromEarned = totalDeduction - deductFromBonus;
 
             // Deduct full amount from customer
             await tx.user.update({
                 where: { id: customerId },
                 data: {
-                    balance: { decrement: reward },
+                    balance: { decrement: totalDeduction },
                     bonusBalance: { decrement: deductFromBonus },
                     earnedBalance: { decrement: deductFromEarned }
                 }
             });
 
             await tx.transaction.create({
-                data: { title: `Создание: ${title}`, amount: -reward, type: 'spend', userId: customerId }
+                data: { title: `Создание: ${title}`, amount: -totalDeduction, type: 'spend', userId: customerId }
             });
 
             // --- Geolocation Push Notification ---
