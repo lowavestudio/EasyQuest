@@ -37,9 +37,9 @@ body.light {
   --card-bg: #ffffff;
   --nav-bg: rgba(255, 255, 255, 0.85);
   --border-color: #e2e8f0;
-  --tg-theme-text-color: #0f172a;
-  --tg-theme-hint-color: #64748b;
-  --tg-theme-bg-color: #f0f4ff;
+  --tg-theme-text-color: #0f172a !important;
+  --tg-theme-hint-color: #64748b !important;
+  --tg-theme-bg-color: #f0f4ff !important;
   --accent-light: rgba(59, 130, 246, 0.12);
   --star-bg: rgba(251, 191, 36, 0.12);
   --success-bg: rgba(34, 197, 94, 0.12);
@@ -53,8 +53,9 @@ body.dark {
   --card-bg: #111827;
   --nav-bg: rgba(17, 24, 39, 0.9);
   --border-color: rgba(255, 255, 255, 0.08);
-  --tg-theme-text-color: #f1f5f9;
-  --tg-theme-hint-color: #64748b;
+  --tg-theme-text-color: #f1f5f9 !important;
+  --tg-theme-hint-color: #94a3b8 !important;
+  --tg-theme-bg-color: #080e1a !important;
   --accent-light: rgba(59, 130, 246, 0.15);
   --star-bg: rgba(251, 191, 36, 0.12);
   --success-bg: rgba(34, 197, 94, 0.12);

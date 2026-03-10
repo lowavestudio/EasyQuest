@@ -153,16 +153,28 @@ export const useAppStore = create<AppState>()(
             setTheme: (theme) => set({ theme }),
 
             haptic: (type) => {
-                const tg = window.Telegram?.WebApp;
-                if (!tg?.HapticFeedback) return;
-
                 try {
-                    if (['light', 'medium', 'heavy'].includes(type)) {
-                        tg.HapticFeedback.impactOccurred(type as 'light' | 'medium' | 'heavy');
-                    } else if (['success', 'warning', 'error'].includes(type)) {
-                        tg.HapticFeedback.notificationOccurred(type as 'success' | 'warning' | 'error');
-                    } else if (type === 'selection') {
-                        tg.HapticFeedback.selectionChanged();
+                    const tg = window.Telegram?.WebApp;
+                    if (tg?.HapticFeedback) {
+                        if (['light', 'medium', 'heavy'].includes(type) && tg.HapticFeedback.impactOccurred) {
+                            tg.HapticFeedback.impactOccurred(type as any);
+                            return;
+                        } else if (['success', 'warning', 'error'].includes(type) && tg.HapticFeedback.notificationOccurred) {
+                            tg.HapticFeedback.notificationOccurred(type as any);
+                            return;
+                        } else if (type === 'selection' && tg.HapticFeedback.selectionChanged) {
+                            tg.HapticFeedback.selectionChanged();
+                            return;
+                        }
+                    }
+
+                    // Fallback for Android webviews or browsers if TG Haptics fail/unavailable
+                    if (navigator.vibrate) {
+                        if (type === 'light' || type === 'selection') navigator.vibrate(10);
+                        else if (type === 'medium') navigator.vibrate(20);
+                        else if (type === 'heavy') navigator.vibrate(30);
+                        else if (type === 'success') navigator.vibrate([10, 30, 20]);
+                        else if (type === 'error') navigator.vibrate([20, 40, 20, 40]);
                     }
                 } catch (e) {
                     console.error('Haptic error:', e);
