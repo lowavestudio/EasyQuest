@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigation, MapPin, Clock, Plus, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Search, X, Moon, Sun, Smartphone } from 'lucide-react';
+import { Navigation, MapPin, Clock, Plus, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Search, X, Moon, Sun, Smartphone, Crown } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -102,6 +102,10 @@ const Feed = () => {
         if (activeChip === 'near') return task.distanceValue !== null && task.distanceValue <= 5;
         if (activeChip === 'reward') return task.reward >= 80;
         return task.category === activeChip;
+    }).sort((a, b) => {
+        if (a.isPremium && !b.isPremium) return -1;
+        if (!a.isPremium && b.isPremium) return 1;
+        return 0;
     });
 
     const createCustomIcon = (reward: number) => {
@@ -297,7 +301,7 @@ const Feed = () => {
                         return (
                             <div
                                 key={task.id}
-                                className="task-card fade-up"
+                                className={`task-card fade-up ${task.isPremium ? 'premium-card' : ''}`}
                                 style={{ animationDelay: `${i * 0.05}s` }}
                                 onClick={() => {
                                     haptic('selection');
@@ -315,6 +319,18 @@ const Feed = () => {
                                             <CatIcon size={10} />
                                             {feedT.chips[(task.category || 'other') as keyof typeof feedT.chips] || catMeta.label}
                                         </span>
+                                        {task.isPremium && (
+                                            <span style={{
+                                                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                fontSize: '10px', fontWeight: 700, letterSpacing: '0.4px',
+                                                padding: '3px 8px', borderRadius: '6px',
+                                                background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', color: 'white',
+                                                boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                                            }}>
+                                                <Crown size={11} />
+                                                VIP
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="task-title">{task.title}</div>
                                     <div className="task-meta">

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { ChevronLeft, Send, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Search, X, MapPin, Loader2 } from 'lucide-react';
+import { ChevronLeft, Send, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Search, X, MapPin, Loader2, Crown } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -77,7 +77,7 @@ function DraggableMarker({
 
 const CreateTask = () => {
     const navigate = useNavigate();
-    const { addTask, userLocation, balance, t, language } = useAppStore();
+    const { addTask, userLocation, balance, t, language, haptic } = useAppStore();
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -113,10 +113,13 @@ const CreateTask = () => {
     const [paymentType, setPaymentType] = useState<'stars' | 'cash'>('stars');
     const [cashAmount, setCashAmount] = useState('');
     const [isOnline, setIsOnline] = useState(false);
+    const [isPremium, setIsPremium] = useState(false);
 
     const rewardNum = Number(reward) || 0;
     const isCash = paymentType === 'cash';
-    const cost = isCash ? 20 : Math.max(rewardNum, 1);
+    const baseCost = isCash ? 20 : Math.max(rewardNum, 1);
+    const vipCost = isPremium ? 50 : 0;
+    const cost = baseCost + vipCost;
     const canSubmit = title.trim() && description.trim() && (isCash ? cashAmount.trim() : rewardNum > 0) && cost <= balance && !isSubmitting;
 
     // Reverse geocode when marker moves
@@ -199,6 +202,7 @@ const CreateTask = () => {
             paymentType,
             cashAmount: isCash ? cashAmount.trim() : undefined,
             isOnline,
+            isPremium,
         });
 
         if (window.Telegram?.WebApp?.HapticFeedback) {
@@ -371,6 +375,43 @@ const CreateTask = () => {
                             }} />
                         </div>
                         <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--tg-theme-text-color)' }}>{ctT.is_online_label}</span>
+                    </div>
+
+                    {/* VIP Toggle */}
+                    <div style={{
+                        marginTop: '4px', background: 'var(--star-bg)', border: '1px solid rgba(251,191,36,0.3)',
+                        borderRadius: '16px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ background: '#fbbf24', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Crown size={20} color="white" />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#b45309' }}>
+                                    {language === 'ru' ? 'VIP-задание' : 'VIP Task'} (+50 ★)
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#d97706', marginTop: '2px', lineHeight: 1.3 }}>
+                                    {language === 'ru' ? 'Выделяется золотым цветом, привлекает больше исполнителей.' : 'Highlighted in gold, attracts more executors.'}
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            style={{
+                                width: '46px', height: '26px', borderRadius: '13px',
+                                background: isPremium ? '#fbbf24' : 'var(--border-color)',
+                                position: 'relative', cursor: 'pointer', transition: '0.3s'
+                            }}
+                            onClick={() => {
+                                haptic('selection');
+                                setIsPremium(!isPremium);
+                            }}
+                        >
+                            <div style={{
+                                position: 'absolute', top: '2px', left: isPremium ? '22px' : '2px',
+                                width: '22px', height: '22px', borderRadius: '50%',
+                                background: 'white', transition: '0.3s', boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                            }} />
+                        </div>
                     </div>
 
                     {/* Location Section */}

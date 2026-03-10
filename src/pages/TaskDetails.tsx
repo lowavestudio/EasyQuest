@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, MapPin, Clock, Info, CheckCircle2, XCircle, Star, MessageSquare, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Upload, ShieldCheck, Navigation } from 'lucide-react';
+import { ChevronLeft, MapPin, Clock, Info, CheckCircle2, XCircle, Star, MessageSquare, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Upload, ShieldCheck, Navigation, Crown } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -145,7 +145,10 @@ const TaskDetails = () => {
             <div className="detail-content">
 
                 {/* Hero card */}
-                <div className="detail-card">
+                <div className="detail-card" style={task.isPremium ? {
+                    background: 'linear-gradient(180deg, rgba(251, 191, 36, 0.15) 0%, var(--card-bg) 100%)',
+                    border: '1.5px solid rgba(251, 191, 36, 0.4)'
+                } : {}}>
                     {/* Category + Status row */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                         <span style={{
@@ -156,7 +159,19 @@ const TaskDetails = () => {
                         }}>
                             <CatIcon size={12} /> {catMeta.label}
                         </span>
-                        <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {task.isPremium && (
+                                <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                    fontSize: '11px', fontWeight: 700, letterSpacing: '0.4px',
+                                    padding: '4px 10px', borderRadius: '8px',
+                                    background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', color: 'white',
+                                    boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                                }}>
+                                    <Crown size={12} />
+                                    VIP
+                                </span>
+                            )}
                             {isCancelled && <span className="status-badge" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{tdT.status.cancelled}</span>}
                             {isUnderReview && <span className="status-badge reviewing">{tdT.status.reviewing}</span>}
                             {isAccepted && <span className="status-badge accepted">{tdT.status.accepted}</span>}

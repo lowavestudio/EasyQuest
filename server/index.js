@@ -757,7 +757,7 @@ app.post('/api/upload', upload.single('photo'), async (req, res) => {
 
 // POST create task (10% platform commission or fixed fee for cash-payments)
 app.post('/api/tasks', async (req, res) => {
-    const { title, description, reward, lat, lng, customerId, category, address, paymentType, cashAmount, isOnline } = req.body;
+    const { title, description, reward, lat, lng, customerId, category, address, paymentType, cashAmount, isOnline, isPremium } = req.body;
     try {
         const result = await prisma.$transaction(async (tx) => {
             const user = await tx.user.findUnique({ where: { id: customerId } });
@@ -774,6 +774,11 @@ app.post('/api/tasks', async (req, res) => {
                 executorReward = reward - commission;
             }
 
+            // ADD VIP COST
+            if (isPremium) {
+                totalDeduction += 50;
+            }
+
             if (!user || user.balance < totalDeduction) throw new Error('Insufficient balance');
 
             const task = await tx.task.create({
@@ -781,7 +786,7 @@ app.post('/api/tasks', async (req, res) => {
                     title, description, reward: executorReward, lat, lng, customerId,
                     status: 'available', category: category || 'other', address: address || '',
                     paymentType: pType, cashAmount: pType === 'cash' ? cashAmount : null,
-                    isOnline: Boolean(isOnline)
+                    isOnline: Boolean(isOnline), isPremium: Boolean(isPremium)
                 }
             });
 

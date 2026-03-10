@@ -66,6 +66,9 @@ model Task {
   // Online flag
   isOnline    Boolean  @default(false)
 
+  // Premium / VIP flag
+  isPremium   Boolean  @default(false)
+
   // Relations
   customerId  String
   customer    User     @relation("CustomerTasks", fields: [customerId], references: [id])
