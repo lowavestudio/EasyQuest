@@ -169,7 +169,7 @@ const TaskDetails = () => {
                         <div className="d-meta-item">
                             <MapPin size={14} />
                             <span style={{ fontSize: '13px' }}>
-                                {task.address || task.distance || commonT.distance_near}
+                                {task.isOnline ? <span style={{ color: '#3b82f6', fontWeight: 600 }}>{t('feed.online_task')}</span> : (task.address || task.distance || commonT.distance_near)}
                             </span>
                         </div>
                         <div className="d-meta-item">
@@ -191,67 +191,71 @@ const TaskDetails = () => {
                 </div>
 
                 {/* Mini Map */}
-                <div style={{ borderRadius: '18px', overflow: 'hidden', border: '1px solid var(--border-color)', height: '180px', position: 'relative' }}>
-                    <MapContainer
-                        center={mapPosition}
-                        zoom={15}
-                        style={{ height: '100%', width: '100%' }}
-                        zoomControl={false}
-                        attributionControl={false}
-                        dragging={false}
-                        doubleClickZoom={false}
-                        scrollWheelZoom={false}
-                        touchZoom={false}
-                    >
-                        <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-                        <Marker position={mapPosition} icon={pinIcon} />
-                    </MapContainer>
-                    {/* Address overlay */}
-                    {task.address && (
-                        <div style={{
-                            position: 'absolute', bottom: '8px', left: '8px', right: '8px', zIndex: 800,
-                            background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)',
-                            borderRadius: '10px', padding: '7px 12px',
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        }}>
-                            <MapPin size={13} color="var(--accent-color)" style={{ flexShrink: 0 }} />
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b', lineHeight: 1.3 }}>
-                                {task.address}
-                            </span>
+                {!task.isOnline && (
+                    <>
+                        <div style={{ borderRadius: '18px', overflow: 'hidden', border: '1px solid var(--border-color)', height: '180px', position: 'relative' }}>
+                            <MapContainer
+                                center={mapPosition}
+                                zoom={15}
+                                style={{ height: '100%', width: '100%' }}
+                                zoomControl={false}
+                                attributionControl={false}
+                                dragging={false}
+                                doubleClickZoom={false}
+                                scrollWheelZoom={false}
+                                touchZoom={false}
+                            >
+                                <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                                <Marker position={mapPosition} icon={pinIcon} />
+                            </MapContainer>
+                            {/* Address overlay */}
+                            {task.address && (
+                                <div style={{
+                                    position: 'absolute', bottom: '8px', left: '8px', right: '8px', zIndex: 800,
+                                    background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)',
+                                    borderRadius: '10px', padding: '7px 12px',
+                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                }}>
+                                    <MapPin size={13} color="var(--accent-color)" style={{ flexShrink: 0 }} />
+                                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b', lineHeight: 1.3 }}>
+                                        {task.address}
+                                    </span>
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                {/* Built-in Route / Navigate button */}
-                <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-                    <a
-                        href={`https://yandex.ru/maps/?rtext=~${task.lat},${task.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                            background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px',
-                            padding: '10px', fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)', textDecoration: 'none'
-                        }}
-                    >
-                        <Navigation size={15} color="var(--accent-color)" />
-                        {language === 'ru' ? 'Маршрут (Яндекс)' : 'Route (Yandex)'}
-                    </a>
-                    <a
-                        href={`https://maps.google.com/?daddr=${task.lat},${task.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                            background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px',
-                            padding: '10px', fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)', textDecoration: 'none'
-                        }}
-                    >
-                        <Navigation size={15} color="#4285F4" />
-                        {language === 'ru' ? 'Google Карты' : 'Google Maps'}
-                    </a>
-                </div>
+                        {/* Built-in Route / Navigate button */}
+                        <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                            <a
+                                href={`https://yandex.ru/maps/?rtext=~${task.lat},${task.lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                    background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px',
+                                    padding: '10px', fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)', textDecoration: 'none'
+                                }}
+                            >
+                                <Navigation size={15} color="var(--accent-color)" />
+                                {tdT.directions.yandex}
+                            </a>
+                            <a
+                                href={`https://maps.google.com/?daddr=${task.lat},${task.lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                    background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px',
+                                    padding: '10px', fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)', textDecoration: 'none'
+                                }}
+                            >
+                                <Navigation size={15} color="#4285F4" />
+                                {tdT.directions.google}
+                            </a>
+                        </div>
+                    </>
+                )}
 
                 {/* Proof photo */}
                 {task.proofPhotoUrl && (
@@ -316,119 +320,119 @@ const TaskDetails = () => {
                         </div>
                     </div>
                 )}
-            </div>
 
-            {/* Bottom actions */}
-            {!isCancelled && !isCompleted && (
-                <div className="fixed-bottom-action">
+                {/* Bottom actions */}
+                {!isCancelled && !isCompleted && (
+                    <div className="fixed-bottom-action">
 
-                    {/* Executor: available → accept */}
-                    {isAvailable && !isOwner && (
-                        <>
-                            <div className="action-warning">
-                                {tdT.warnings.accept}
+                        {/* Executor: available → accept */}
+                        {isAvailable && !isOwner && (
+                            <>
+                                <div className="action-warning">
+                                    {tdT.warnings.accept}
+                                </div>
+                                <button className="tg-button" onClick={handleAccept} disabled={isProcessing}>
+                                    {isProcessing ? tdT.actions.accepting : tdT.actions.accept}
+                                </button>
+                            </>
+                        )}
+
+                        {/* Executor: accepted → chat + submit photo + abandon */}
+                        {isAccepted && isExecutor && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                                <button
+                                    className="tg-button"
+                                    style={{ background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                    onClick={() => navigate(`/chat/${task.id}`)}
+                                >
+                                    <MessageSquare size={18} /> {tdT.actions.chat}
+                                </button>
+                                <label style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    padding: '14px', borderRadius: '14px', fontSize: '15px', fontWeight: 700,
+                                    background: 'var(--success-color)', color: 'white', cursor: 'pointer',
+                                    opacity: isUploading ? 0.7 : 1,
+                                }}>
+                                    <Upload size={18} />
+                                    {isUploading ? tdT.actions.uploading : tdT.actions.submit}
+                                    <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhotoSubmit} disabled={isUploading} />
+                                </label>
+                                <button
+                                    className="tg-button danger"
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                    onClick={() => setShowAbandonModal(true)}
+                                    disabled={isProcessing}
+                                >
+                                    <XCircle size={18} /> {tdT.actions.abandon}
+                                </button>
                             </div>
-                            <button className="tg-button" onClick={handleAccept} disabled={isProcessing}>
-                                {isProcessing ? tdT.actions.accepting : tdT.actions.accept}
-                            </button>
-                        </>
-                    )}
+                        )}
 
-                    {/* Executor: accepted → chat + submit photo + abandon */}
-                    {isAccepted && isExecutor && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                            <button
-                                className="tg-button"
-                                style={{ background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                                onClick={() => navigate(`/chat/${task.id}`)}
-                            >
-                                <MessageSquare size={18} /> {tdT.actions.chat}
-                            </button>
-                            <label style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                padding: '14px', borderRadius: '14px', fontSize: '15px', fontWeight: 700,
-                                background: 'var(--success-color)', color: 'white', cursor: 'pointer',
-                                opacity: isUploading ? 0.7 : 1,
-                            }}>
-                                <Upload size={18} />
-                                {isUploading ? tdT.actions.uploading : tdT.actions.submit}
-                                <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhotoSubmit} disabled={isUploading} />
-                            </label>
+                        {/* Executor: under_review → chat */}
+                        {isUnderReview && isExecutor && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                                <div className="action-warning" style={{ background: 'rgba(251,191,36,0.12)', color: '#d97706' }}>
+                                    ⏳ {tdT.warnings.reviewing}
+                                </div>
+                                <button
+                                    className="tg-button"
+                                    style={{ background: 'var(--card-bg)', color: 'var(--tg-theme-text-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                    onClick={() => navigate(`/chat/${task.id}`)}
+                                >
+                                    <MessageSquare size={18} /> {tdT.actions.chat}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Customer: cancel own available task */}
+                        {isOwner && isAvailable && (
                             <button
                                 className="tg-button danger"
                                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                                onClick={() => setShowAbandonModal(true)}
+                                onClick={() => setShowCancelModal(true)}
                                 disabled={isProcessing}
                             >
-                                <XCircle size={18} /> {tdT.actions.abandon}
+                                <XCircle size={18} /> {isProcessing ? tdT.actions.cancelling : tdT.actions.cancel}
                             </button>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Executor: under_review → chat */}
-                    {isUnderReview && isExecutor && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                            <div className="action-warning" style={{ background: 'rgba(251,191,36,0.12)', color: '#d97706' }}>
-                                ⏳ {tdT.warnings.reviewing}
+                        {/* Customer: accepted → waiting */}
+                        {isOwner && isAccepted && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                                <button
+                                    className="tg-button"
+                                    style={{ background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                    onClick={() => navigate(`/chat/${task.id}`)}
+                                >
+                                    <MessageSquare size={18} /> {tdT.actions.chat_executor}
+                                </button>
+                                <div className="action-warning">{tdT.warnings.waiting}</div>
                             </div>
-                            <button
-                                className="tg-button"
-                                style={{ background: 'var(--card-bg)', color: 'var(--tg-theme-text-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                                onClick={() => navigate(`/chat/${task.id}`)}
-                            >
-                                <MessageSquare size={18} /> {tdT.actions.chat}
-                            </button>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Customer: cancel own available task */}
-                    {isOwner && isAvailable && (
-                        <button
-                            className="tg-button danger"
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                            onClick={() => setShowCancelModal(true)}
-                            disabled={isProcessing}
-                        >
-                            <XCircle size={18} /> {isProcessing ? tdT.actions.cancelling : tdT.actions.cancel}
-                        </button>
-                    )}
-
-                    {/* Customer: accepted → waiting */}
-                    {isOwner && isAccepted && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                            <button
-                                className="tg-button"
-                                style={{ background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                                onClick={() => navigate(`/chat/${task.id}`)}
-                            >
-                                <MessageSquare size={18} /> {tdT.actions.chat_executor}
-                            </button>
-                            <div className="action-warning">{tdT.warnings.waiting}</div>
-                        </div>
-                    )}
-
-                    {/* Customer: under_review → approve */}
-                    {isOwner && isUnderReview && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                            <button
-                                className="tg-button"
-                                style={{ background: 'var(--card-bg)', color: 'var(--tg-theme-text-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                                onClick={() => navigate(`/chat/${task.id}`)}
-                            >
-                                <MessageSquare size={18} /> {tdT.actions.chat_executor}
-                            </button>
-                            <button
-                                className="tg-button"
-                                style={{ background: 'var(--success-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                                onClick={() => setShowReviewModal(true)}
-                                disabled={isProcessing}
-                            >
-                                {isProcessing ? tdT.actions.approving : <><Star size={18} fill="white" /> {tdT.actions.approve}</>}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
+                        {/* Customer: under_review → approve */}
+                        {isOwner && isUnderReview && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                                <button
+                                    className="tg-button"
+                                    style={{ background: 'var(--card-bg)', color: 'var(--tg-theme-text-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                    onClick={() => navigate(`/chat/${task.id}`)}
+                                >
+                                    <MessageSquare size={18} /> {tdT.actions.chat_executor}
+                                </button>
+                                <button
+                                    className="tg-button"
+                                    style={{ background: 'var(--success-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                    onClick={() => setShowReviewModal(true)}
+                                    disabled={isProcessing}
+                                >
+                                    {isProcessing ? tdT.actions.approving : <><Star size={18} fill="white" /> {tdT.actions.approve}</>}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
 
             <ReviewModal open={showReviewModal} taskTitle={task.title} onClose={() => setShowReviewModal(false)} onConfirm={handleApprove} />
             <ConfirmModal open={showAbandonModal} title={tdT.actions.abandon + "?"} message={tdT.modals.abandon_msg} confirmText={tdT.modals.abandon_confirm} cancelText={tdT.modals.cancel} danger onConfirm={handleAbandon} onCancel={() => setShowAbandonModal(false)} />

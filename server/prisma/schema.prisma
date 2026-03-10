@@ -62,6 +62,9 @@ model Task {
   // Payment
   paymentType String   @default("stars") // 'stars' | 'cash'
   cashAmount  String?  // e.g. '1000 RUB'
+  
+  // Online flag
+  isOnline    Boolean  @default(false)
 
   // Relations
   customerId  String

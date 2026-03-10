@@ -17,6 +17,7 @@ export const translations = {
             no_tasks: 'Заданий нет',
             no_tasks_text: 'По выбранному фильтру пока нет доступных заданий',
             locate_me: 'Найти меня',
+            online_task: '🌐 Онлайн',
             chips: {
                 all: 'Все',
                 near: 'Рядом',
@@ -50,7 +51,13 @@ export const translations = {
             },
             topup_modal: {
                 title: 'Пополнить баланс',
-                official_tg: 'Оплата происходит официально через Telegram Stars.'
+                official_tg: 'Оплата происходит официально через Telegram Stars.',
+                packages: [
+                    { label: 'Стартовый', badge: '' },
+                    { label: 'Популярный', badge: '🔥 Выбор' },
+                    { label: 'Выгодный', badge: '💎 Лучшая цена' },
+                    { label: 'Профи', badge: '⚡ Максимум' }
+                ]
             }
         },
         profile: {
@@ -102,7 +109,8 @@ export const translations = {
             payment_stars: 'Через приложение (Stars)',
             payment_cash: 'Наличные (или на карту)',
             cash_amount_label: 'Сумма в рублях/валюте',
-            commission_fee: 'Комиссия за публикацию: 20 Stars'
+            commission_fee: 'Комиссия за публикацию: 20 Stars',
+            is_online_label: '🌐 Онлайн-задание (выполняется откуда угодно)'
         },
         task_details: {
             title: 'Детали задания',
@@ -150,7 +158,11 @@ export const translations = {
                 'Сделайте минимум 1 чёткое фото',
                 'GPS-локация должна совпадать с меткой',
                 'Сдайте в течение 2 часов после принятия'
-            ]
+            ],
+            directions: {
+                yandex: 'Маршрут (Яндекс)',
+                google: 'Google Карты'
+            }
         },
         my_tasks: {
             title: 'Мои задания',
@@ -233,6 +245,7 @@ export const translations = {
             no_tasks: 'No tasks',
             no_tasks_text: 'No available tasks for the selected filters',
             locate_me: 'Locate me',
+            online_task: '🌐 Online',
             chips: {
                 all: 'All',
                 near: 'Near',
@@ -266,7 +279,13 @@ export const translations = {
             },
             topup_modal: {
                 title: 'Top Up Balance',
-                official_tg: 'Payments are processed officially via Telegram Stars.'
+                official_tg: 'Payments are processed officially via Telegram Stars.',
+                packages: [
+                    { label: 'Starter', badge: '' },
+                    { label: 'Popular', badge: '🔥 Choice' },
+                    { label: 'Best Value', badge: '💎 Best' },
+                    { label: 'Pro', badge: '⚡ Max' }
+                ]
             }
         },
         profile: {
@@ -318,7 +337,8 @@ export const translations = {
             payment_stars: 'In-app (Stars)',
             payment_cash: 'Cash (or Card transfer)',
             cash_amount_label: 'Amount in Cash/Card',
-            commission_fee: 'Publishing fee: 20 Stars'
+            commission_fee: 'Publishing fee: 20 Stars',
+            is_online_label: '🌐 Online task (can be done from anywhere)'
         },
         task_details: {
             title: 'Task Details',
@@ -366,7 +386,11 @@ export const translations = {
                 'Take at least 1 clear photo',
                 'GPS location must match the marker',
                 'Submit within 2 hours after acceptance'
-            ]
+            ],
+            directions: {
+                yandex: 'Route (Yandex)',
+                google: 'Google Maps'
+            }
         },
         my_tasks: {
             title: 'My Tasks',

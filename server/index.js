@@ -656,6 +656,7 @@ app.get('/api/tasks', async (req, res) => {
             };
 
             tasks = tasks.filter(task => {
+                if (task.isOnline) return true;
                 const dist = haversine(userLat, userLng, task.lat, task.lng);
                 return dist <= maxDistance;
             });
@@ -756,7 +757,7 @@ app.post('/api/upload', upload.single('photo'), async (req, res) => {
 
 // POST create task (10% platform commission or fixed fee for cash-payments)
 app.post('/api/tasks', async (req, res) => {
-    const { title, description, reward, lat, lng, customerId, category, address, paymentType, cashAmount } = req.body;
+    const { title, description, reward, lat, lng, customerId, category, address, paymentType, cashAmount, isOnline } = req.body;
     try {
         const result = await prisma.$transaction(async (tx) => {
             const user = await tx.user.findUnique({ where: { id: customerId } });
@@ -779,7 +780,8 @@ app.post('/api/tasks', async (req, res) => {
                 data: {
                     title, description, reward: executorReward, lat, lng, customerId,
                     status: 'available', category: category || 'other', address: address || '',
-                    paymentType: pType, cashAmount: pType === 'cash' ? cashAmount : null
+                    paymentType: pType, cashAmount: pType === 'cash' ? cashAmount : null,
+                    isOnline: Boolean(isOnline)
                 }
             });
 
@@ -1097,6 +1099,18 @@ app.use((req, res) => {
         res.status(404).send('Not Found');
     }
 });
+
+// --- RENDER KEEP-ALIVE ---
+const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL || 'https://easyquesteasy-quest.onrender.com';
+setInterval(() => {
+    try {
+        fetch(RENDER_EXTERNAL_URL)
+            .then(res => console.log(`[Keep-Alive] Pinged ${RENDER_EXTERNAL_URL}: ${res.status}`))
+            .catch(err => console.error('[Keep-Alive] fetch error:', err.message));
+    } catch (e) {
+        console.error('[Keep-Alive] error:', e.message);
+    }
+}, 10 * 60 * 1000); // 10 minutes
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

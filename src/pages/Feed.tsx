@@ -200,16 +200,18 @@ const Feed = () => {
                         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                     />
                     {filteredTasks.map(task => (
-                        <Marker
-                            key={task.id}
-                            position={[task.lat, task.lng]}
-                            icon={createCustomIcon(task.reward)}
-                            eventHandlers={{
-                                click: () => navigate(`/task/${task.id}`)
-                            }}
-                        >
-                            <Popup>{task.title}</Popup>
-                        </Marker>
+                        !task.isOnline ? (
+                            <Marker
+                                key={task.id}
+                                position={[task.lat, task.lng]}
+                                icon={createCustomIcon(task.reward)}
+                                eventHandlers={{
+                                    click: () => navigate(`/task/${task.id}`)
+                                }}
+                            >
+                                <Popup>{task.title}</Popup>
+                            </Marker>
+                        ) : null
                     ))}
                     {userLocation && (
                         <Marker position={userLocation} icon={userIcon}>
@@ -284,11 +286,13 @@ const Feed = () => {
                                     <div className="task-meta">
                                         <span className="task-meta-item" style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                             <MapPin size={13} />
-                                            {task.address
-                                                ? task.address
-                                                : task.distanceValue !== undefined && task.distanceValue !== null
-                                                    ? `${task.distanceValue.toFixed(1)} ${commonT.km}`
-                                                    : (t('common.error') === 'Ошибка' ? 'рядом' : 'nearby')}
+                                            {task.isOnline
+                                                ? <span style={{ color: '#3b82f6', fontWeight: 700 }}>{feedT.online_task}</span>
+                                                : task.address
+                                                    ? task.address
+                                                    : task.distanceValue !== undefined && task.distanceValue !== null
+                                                        ? `${task.distanceValue.toFixed(1)} ${commonT.km}`
+                                                        : commonT.distance_near}
                                         </span>
                                         <span className="task-meta-item">
                                             <Clock size={13} /> {task.timeAllowed || `15 ${commonT.min}`}

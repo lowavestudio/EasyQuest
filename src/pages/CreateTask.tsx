@@ -110,9 +110,9 @@ const CreateTask = () => {
     const [showResults, setShowResults] = useState(false);
     const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Payment Type
     const [paymentType, setPaymentType] = useState<'stars' | 'cash'>('stars');
     const [cashAmount, setCashAmount] = useState('');
+    const [isOnline, setIsOnline] = useState(false);
 
     const rewardNum = Number(reward) || 0;
     const isCash = paymentType === 'cash';
@@ -198,6 +198,7 @@ const CreateTask = () => {
             address: address || undefined,
             paymentType,
             cashAmount: isCash ? cashAmount.trim() : undefined,
+            isOnline,
         });
 
         if (window.Telegram?.WebApp?.HapticFeedback) {
@@ -353,120 +354,141 @@ const CreateTask = () => {
                         </div>
                     )}
 
-                    {/* Location Section */}
-                    <div className="form-group">
-                        <label className="form-label">{ctT.location}</label>
-
-                        {/* Address Search */}
-                        <div style={{ position: 'relative', marginBottom: '10px' }}>
+                    {/* Online Task Toggle */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--card-bg)', borderRadius: '14px', border: '1.5px solid var(--border-color)', marginTop: '4px' }}>
+                        <div
+                            onClick={() => setIsOnline(!isOnline)}
+                            style={{
+                                width: '44px', height: '24px', borderRadius: '12px', flexShrink: 0,
+                                background: isOnline ? 'var(--accent-color)' : 'var(--tg-theme-hint-color)',
+                                position: 'relative', cursor: 'pointer', transition: '0.2s', opacity: isOnline ? 1 : 0.5
+                            }}
+                        >
                             <div style={{
-                                display: 'flex', alignItems: 'center', gap: '10px',
-                                background: 'var(--card-bg)', border: '1.5px solid var(--border-color)',
-                                borderRadius: '12px', padding: '10px 14px',
-                            }}>
-                                {isSearching
-                                    ? <Loader2 size={16} color="var(--accent-color)" className="spin-anim" style={{ flexShrink: 0 }} />
-                                    : <Search size={16} color="var(--tg-theme-hint-color)" style={{ flexShrink: 0 }} />
-                                }
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={handleSearchChange}
-                                    onFocus={() => searchResults.length > 0 && setShowResults(true)}
-                                    placeholder={ctT.placeholders.address}
-                                    style={{
-                                        flex: 1, border: 'none', background: 'transparent', outline: 'none',
-                                        fontSize: '14px', color: 'var(--tg-theme-text-color)',
-                                        fontFamily: "'Inter', sans-serif",
-                                    }}
-                                />
-                                {searchQuery && (
-                                    <button type="button" onClick={() => { setSearchQuery(''); setShowResults(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
-                                        <X size={16} color="var(--tg-theme-hint-color)" />
-                                    </button>
+                                width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                                position: 'absolute', top: '2px', left: isOnline ? '22px' : '2px', transition: '0.2s',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                            }} />
+                        </div>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--tg-theme-text-color)' }}>{ctT.is_online_label}</span>
+                    </div>
+
+                    {/* Location Section */}
+                    {!isOnline && (
+                        <div className="form-group">
+                            <label className="form-label">{ctT.location}</label>
+
+                            {/* Address Search */}
+                            <div style={{ position: 'relative', marginBottom: '10px' }}>
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', gap: '10px',
+                                    background: 'var(--card-bg)', border: '1.5px solid var(--border-color)',
+                                    borderRadius: '12px', padding: '10px 14px',
+                                }}>
+                                    {isSearching
+                                        ? <Loader2 size={16} color="var(--accent-color)" className="spin-anim" style={{ flexShrink: 0 }} />
+                                        : <Search size={16} color="var(--tg-theme-hint-color)" style={{ flexShrink: 0 }} />
+                                    }
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={handleSearchChange}
+                                        onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                                        placeholder={ctT.placeholders.address}
+                                        style={{
+                                            flex: 1, border: 'none', background: 'transparent', outline: 'none',
+                                            fontSize: '14px', color: 'var(--tg-theme-text-color)',
+                                            fontFamily: "'Inter', sans-serif",
+                                        }}
+                                    />
+                                    {searchQuery && (
+                                        <button type="button" onClick={() => { setSearchQuery(''); setShowResults(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                                            <X size={16} color="var(--tg-theme-hint-color)" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Dropdown results */}
+                                {showResults && searchResults.length > 0 && (
+                                    <div style={{
+                                        position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 1000,
+                                        background: 'var(--card-bg)', border: '1px solid var(--border-color)',
+                                        borderRadius: '12px', overflow: 'hidden',
+                                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                                    }}>
+                                        {searchResults.map(result => {
+                                            const parts = result.display_name.split(', ');
+                                            return (
+                                                <button
+                                                    key={result.place_id}
+                                                    type="button"
+                                                    onClick={() => handleSelectResult(result)}
+                                                    style={{
+                                                        width: '100%', padding: '12px 14px', textAlign: 'left',
+                                                        background: 'transparent', border: 'none', cursor: 'pointer',
+                                                        borderBottom: '1px solid var(--border-color)', display: 'flex',
+                                                        alignItems: 'flex-start', gap: '10px',
+                                                        transition: 'background 0.1s',
+                                                    }}
+                                                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-light)')}
+                                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                                >
+                                                    <MapPin size={14} color="var(--accent-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                                                    <div>
+                                                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)', fontFamily: "'Inter', sans-serif" }}>
+                                                            {parts[0]}
+                                                        </div>
+                                                        <div style={{ fontSize: '11px', color: 'var(--tg-theme-hint-color)', marginTop: '2px', fontFamily: "'Inter', sans-serif" }}>
+                                                            {parts.slice(1, 4).join(', ')}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 )}
                             </div>
 
-                            {/* Dropdown results */}
-                            {showResults && searchResults.length > 0 && (
+                            {/* Interactive Map */}
+                            <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1.5px solid var(--border-color)', height: '220px', position: 'relative' }}>
+                                <MapContainer
+                                    center={markerPos}
+                                    zoom={15}
+                                    style={{ height: '100%', width: '100%' }}
+                                    zoomControl={false}
+                                    attributionControl={false}
+                                >
+                                    <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                                    <DraggableMarker position={markerPos} onMove={handleMarkerMove} />
+                                    {flyToPos && <FlyTo position={flyToPos} />}
+                                </MapContainer>
+
+                                {/* Map hint overlay */}
                                 <div style={{
-                                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 1000,
-                                    background: 'var(--card-bg)', border: '1px solid var(--border-color)',
-                                    borderRadius: '12px', overflow: 'hidden',
-                                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                                    position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)',
+                                    background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
+                                    color: 'white', fontSize: '11px', fontWeight: 600,
+                                    padding: '5px 12px', borderRadius: '20px', zIndex: 800,
+                                    pointerEvents: 'none', whiteSpace: 'nowrap',
                                 }}>
-                                    {searchResults.map(result => {
-                                        const parts = result.display_name.split(', ');
-                                        return (
-                                            <button
-                                                key={result.place_id}
-                                                type="button"
-                                                onClick={() => handleSelectResult(result)}
-                                                style={{
-                                                    width: '100%', padding: '12px 14px', textAlign: 'left',
-                                                    background: 'transparent', border: 'none', cursor: 'pointer',
-                                                    borderBottom: '1px solid var(--border-color)', display: 'flex',
-                                                    alignItems: 'flex-start', gap: '10px',
-                                                    transition: 'background 0.1s',
-                                                }}
-                                                onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-light)')}
-                                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                            >
-                                                <MapPin size={14} color="var(--accent-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                                                <div>
-                                                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tg-theme-text-color)', fontFamily: "'Inter', sans-serif" }}>
-                                                        {parts[0]}
-                                                    </div>
-                                                    <div style={{ fontSize: '11px', color: 'var(--tg-theme-hint-color)', marginTop: '2px', fontFamily: "'Inter', sans-serif" }}>
-                                                        {parts.slice(1, 4).join(', ')}
-                                                    </div>
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
+                                    {ctT.map_hint}
+                                </div>
+                            </div>
+
+                            {/* Current address display */}
+                            {address && (
+                                <div style={{
+                                    marginTop: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px',
+                                    padding: '10px 12px', background: 'var(--accent-light)', borderRadius: '10px',
+                                }}>
+                                    <MapPin size={14} color="var(--accent-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                                    <span style={{ fontSize: '13px', color: 'var(--accent-color)', fontWeight: 600, lineHeight: 1.4 }}>
+                                        {address}
+                                    </span>
                                 </div>
                             )}
                         </div>
-
-                        {/* Interactive Map */}
-                        <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1.5px solid var(--border-color)', height: '220px', position: 'relative' }}>
-                            <MapContainer
-                                center={markerPos}
-                                zoom={15}
-                                style={{ height: '100%', width: '100%' }}
-                                zoomControl={false}
-                                attributionControl={false}
-                            >
-                                <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-                                <DraggableMarker position={markerPos} onMove={handleMarkerMove} />
-                                {flyToPos && <FlyTo position={flyToPos} />}
-                            </MapContainer>
-
-                            {/* Map hint overlay */}
-                            <div style={{
-                                position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)',
-                                background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
-                                color: 'white', fontSize: '11px', fontWeight: 600,
-                                padding: '5px 12px', borderRadius: '20px', zIndex: 800,
-                                pointerEvents: 'none', whiteSpace: 'nowrap',
-                            }}>
-                                {ctT.map_hint}
-                            </div>
-                        </div>
-
-                        {/* Current address display */}
-                        {address && (
-                            <div style={{
-                                marginTop: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px',
-                                padding: '10px 12px', background: 'var(--accent-light)', borderRadius: '10px',
-                            }}>
-                                <MapPin size={14} color="var(--accent-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                                <span style={{ fontSize: '13px', color: 'var(--accent-color)', fontWeight: 600, lineHeight: 1.4 }}>
-                                    {address}
-                                </span>
-                            </div>
-                        )}
-                    </div>
+                    )}
 
                     {/* Submit */}
                     <button

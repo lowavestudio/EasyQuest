@@ -233,8 +233,8 @@ const Wallet = () => {
                                                 {pkg.stars} {commonT.stars}
                                             </div>
                                             <div style={{ fontSize: '12px', color: 'var(--tg-theme-hint-color)', marginTop: '2px' }}>
-                                                {language === 'ru' ? pkg.label : (idx === 0 ? 'Starter' : idx === 1 ? 'Popular' : idx === 2 ? 'Best Value' : 'Pro')}
-                                                {pkg.badge && <span style={{ marginLeft: '8px', background: 'var(--accent-light)', color: 'var(--accent-color)', padding: '1px 7px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>{language === 'ru' ? pkg.badge : (idx === 1 ? '🔥 Choice' : idx === 2 ? '💎 Best' : '⚡ Max')}</span>}
+                                                {walletT.topup_modal.packages[idx].label}
+                                                {walletT.topup_modal.packages[idx].badge && <span style={{ marginLeft: '8px', background: 'var(--accent-light)', color: 'var(--accent-color)', padding: '1px 7px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>{walletT.topup_modal.packages[idx].badge}</span>}
                                             </div>
                                         </div>
 
