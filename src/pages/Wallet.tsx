@@ -15,7 +15,7 @@ const PACKAGES = [
 
 
 const Wallet = () => {
-    const { balance, user, transactions, buyStars, withdraw, t, language } = useAppStore();
+    const { balance, user, transactions, buyStars, withdraw, t, language, haptic } = useAppStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [showTopUp, setShowTopUp] = useState(false);
     const [showWithdraw, setShowWithdraw] = useState(false);
@@ -64,6 +64,7 @@ const Wallet = () => {
     };
 
     const handleBuyStars = async (stars: number, idx: number) => {
+        haptic('light');
         setIsProcessing(true);
         setProcessingPkg(idx);
         try {
@@ -82,6 +83,7 @@ const Wallet = () => {
         if (isNaN(amt) || amt < 100) return;
         if (!withdrawAddress) return;
 
+        haptic('medium');
         setIsProcessing(true);
         try {
             await withdraw(amt, withdrawAddress);
@@ -122,14 +124,14 @@ const Wallet = () => {
                         <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                             <button
                                 className="wallet-action-btn"
-                                onClick={() => setShowTopUp(true)}
+                                onClick={() => { haptic('selection'); setShowTopUp(true); }}
                                 style={{ flex: 1, background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)', border: 'none', borderRadius: '12px', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
                             >
                                 <Plus size={17} /> {walletT.buy_stars}
                             </button>
                             <button
                                 className="wallet-action-btn"
-                                onClick={() => setShowWithdraw(true)}
+                                onClick={() => { haptic('selection'); setShowWithdraw(true); }}
                                 style={{ flex: 1, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', color: 'white', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
                             >
                                 <ArrowUpRight size={17} /> {walletT.withdraw}

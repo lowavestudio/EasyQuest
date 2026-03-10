@@ -36,7 +36,7 @@ const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:3001';
 const TaskDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { tasks, acceptTask, abandonTask, cancelOwnTask, approveTask, completeTask, uploadPhoto, user, t, language } = useAppStore();
+    const { tasks, acceptTask, abandonTask, cancelOwnTask, approveTask, completeTask, uploadPhoto, user, t, language, haptic } = useAppStore();
     const [showAbandonModal, setShowAbandonModal] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
@@ -83,16 +83,16 @@ const TaskDetails = () => {
     const CatIcon = catMeta.Icon;
 
     const handleAccept = async () => {
+        haptic('light');
         setIsProcessing(true);
-        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
         await acceptTask(task.id);
         setIsProcessing(false);
         navigate('/tasks');
     };
 
     const handleAbandon = async () => {
+        haptic('light');
         setIsProcessing(true);
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('warning');
         await abandonTask(task.id);
         setShowAbandonModal(false);
         setIsProcessing(false);
@@ -100,8 +100,8 @@ const TaskDetails = () => {
     };
 
     const handleCancelOwn = async () => {
+        haptic('light');
         setIsProcessing(true);
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('warning');
         await cancelOwnTask(task.id);
         setShowCancelModal(false);
         setIsProcessing(false);
@@ -109,8 +109,8 @@ const TaskDetails = () => {
     };
 
     const handleApprove = async (rating: number, comment: string) => {
+        haptic('success');
         setIsProcessing(true);
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
         await approveTask(task.id, rating, comment);
         setShowReviewModal(false);
         setIsProcessing(false);
@@ -120,8 +120,9 @@ const TaskDetails = () => {
     const handlePhotoSubmit = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        haptic('light');
         setIsUploading(true);
-        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         const url = await uploadPhoto(file);
         if (url) {
             await completeTask(task.id, url);
@@ -134,7 +135,7 @@ const TaskDetails = () => {
     return (
         <div className="task-details-page">
             <div className="detail-header">
-                <button className="back-btn" onClick={() => navigate(-1)}>
+                <button className="back-btn" onClick={() => { haptic('selection'); navigate(-1); }}>
                     <ChevronLeft size={22} />
                 </button>
                 <div className="detail-title">{tdT.title}</div>

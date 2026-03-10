@@ -93,6 +93,7 @@ interface AppState {
     messages: ChatMessage[];
     unreadCount: number;
     userLocation: [number, number] | null;
+    isLoadingTasks: boolean;
 
     login: (tgUser: any) => Promise<void>;
     setRole: (role: Role) => void;
@@ -125,6 +126,9 @@ interface AppState {
     language: Language;
     setLanguage: (lang: Language) => void;
     t: (path: string) => any;
+
+    // UI/UX
+    haptic: (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' | 'selection') => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -139,7 +143,25 @@ export const useAppStore = create<AppState>()(
             messages: [],
             unreadCount: 0,
             userLocation: null,
+            isLoadingTasks: true,
             language: 'ru',
+
+            haptic: (type) => {
+                const tg = window.Telegram?.WebApp;
+                if (!tg?.HapticFeedback) return;
+
+                try {
+                    if (['light', 'medium', 'heavy'].includes(type)) {
+                        tg.HapticFeedback.impactOccurred(type as 'light' | 'medium' | 'heavy');
+                    } else if (['success', 'warning', 'error'].includes(type)) {
+                        tg.HapticFeedback.notificationOccurred(type as 'success' | 'warning' | 'error');
+                    } else if (type === 'selection') {
+                        tg.HapticFeedback.selectionChanged();
+                    }
+                } catch (e) {
+                    console.error('Haptic error:', e);
+                }
+            },
 
             setLanguage: (lang) => set({ language: lang }),
 
@@ -286,6 +308,7 @@ export const useAppStore = create<AppState>()(
 
             fetchTasks: async () => {
                 const { userLocation } = get();
+                set({ isLoadingTasks: true });
                 try {
                     let url = `${API_URL}/tasks`;
                     if (userLocation) {
@@ -293,9 +316,10 @@ export const useAppStore = create<AppState>()(
                     }
                     const res = await fetch(url);
                     const tasks = await res.json();
-                    set({ tasks });
+                    set({ tasks, isLoadingTasks: false });
                 } catch (err) {
                     console.error('Fetch tasks error:', err);
+                    set({ isLoadingTasks: false });
                 }
             },
 

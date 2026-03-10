@@ -46,7 +46,7 @@ const FILTER_CHIPS = [
 
 const Feed = () => {
     const navigate = useNavigate();
-    const { tasks, role, user, userLocation, setUserLocation, fetchTasks, notify, t } = useAppStore();
+    const { tasks, isLoadingTasks, role, user, userLocation, setUserLocation, fetchTasks, notify, t, haptic } = useAppStore();
     const [isLocating, setIsLocating] = useState(false);
     const [activeChip, setActiveChip] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -181,7 +181,10 @@ const Feed = () => {
                     <button
                         key={chip.id}
                         className={`chip ${activeChip === chip.id ? 'active' : ''}`}
-                        onClick={() => setActiveChip(chip.id)}
+                        onClick={() => {
+                            haptic('selection');
+                            setActiveChip(chip.id);
+                        }}
                     >
                         {feedT.chips[chip.id as keyof typeof feedT.chips] || chip.label}
                     </button>
@@ -226,7 +229,10 @@ const Feed = () => {
                     <button
                         className="map-locate-btn"
                         style={{ right: '64px', background: 'var(--accent-gradient)', color: 'white', border: 'none', boxShadow: 'var(--shadow-accent)' }}
-                        onClick={() => navigate('/create-task')}
+                        onClick={() => {
+                            haptic('light');
+                            navigate('/create-task');
+                        }}
                     >
                         <Plus size={22} />
                     </button>
@@ -234,7 +240,10 @@ const Feed = () => {
 
                 <button
                     className="map-locate-btn"
-                    onClick={handleLocateMe}
+                    onClick={() => {
+                        haptic('light');
+                        handleLocateMe();
+                    }}
                     style={{ opacity: isLocating ? 0.7 : 1 }}
                 >
                     <Navigation size={18} className={isLocating ? 'spin-anim' : ''} />
@@ -249,7 +258,19 @@ const Feed = () => {
             </div>
 
             <div className="task-feed" style={{ padding: '0 16px 16px' }}>
-                {filteredTasks.length === 0 ? (
+                {isLoadingTasks ? (
+                    // SKELETON LOADING STATE
+                    [1, 2, 3].map(n => (
+                        <div key={n} className="skeleton-card skeleton-box" style={{ height: '90px' }}>
+                            <div className="skeleton-title skeleton-box"></div>
+                            <div className="skeleton-text skeleton-box"></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                                <div className="skeleton-text skeleton-box" style={{ width: '30%', margin: 0 }}></div>
+                                <div className="skeleton-price skeleton-box"></div>
+                            </div>
+                        </div>
+                    ))
+                ) : filteredTasks.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state-icon">
                             <MapPin size={28} />
@@ -268,7 +289,10 @@ const Feed = () => {
                                 key={task.id}
                                 className="task-card fade-up"
                                 style={{ animationDelay: `${i * 0.05}s` }}
-                                onClick={() => navigate(`/task/${task.id}`)}
+                                onClick={() => {
+                                    haptic('selection');
+                                    navigate(`/task/${task.id}`);
+                                }}
                             >
                                 <div className="task-info">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
