@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { UserRound, ShieldCheck, Briefcase, ChevronRight, LogOut, Star, HelpCircle, Users, Settings, Shield } from 'lucide-react';
+import { UserRound, ShieldCheck, Briefcase, ChevronRight, LogOut, Star, HelpCircle, Users, Settings, Shield, PlusSquare } from 'lucide-react';
 import { TonConnectButton } from '@tonconnect/ui-react';
 
 
 
 const Profile = () => {
-    const { user, balance, setRole, role, t, language, setLanguage, logout, notify } = useAppStore();
+    const { user, balance, setRole, role, t, language, setLanguage, logout, notify, haptic } = useAppStore();
     const navigate = useNavigate();
 
     const profileT = t('profile');
@@ -105,6 +105,23 @@ const Profile = () => {
                         <div className="settings-row-left">
                             <HelpCircle size={18} color="var(--warning-color)" />
                             <span>{profileT.help}</span>
+                        </div>
+                        <ChevronRight size={18} />
+                    </div>
+
+                    <div className="settings-row" onClick={() => {
+                        const tg = window.Telegram?.WebApp;
+                        if (tg?.addToHomeScreen) {
+                            tg.addToHomeScreen();
+                            haptic('success');
+                        } else {
+                            haptic('error');
+                            notify(language === 'ru' ? 'Ваш клиент Telegram не поддерживает эту функцию :(' : 'Your Telegram client does not support this feature :(', 'error');
+                        }
+                    }}>
+                        <div className="settings-row-left">
+                            <PlusSquare size={18} color="var(--accent-color)" />
+                            <span>{language === 'ru' ? 'На экран "Домой"' : 'Add to Home Screen'}</span>
                         </div>
                         <ChevronRight size={18} />
                     </div>

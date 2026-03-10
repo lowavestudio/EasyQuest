@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings2, Navigation, MapPin, Clock, Plus, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Search, X } from 'lucide-react';
+import { Navigation, MapPin, Clock, Plus, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Search, X, Moon, Sun, Smartphone } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -46,7 +46,7 @@ const FILTER_CHIPS = [
 
 const Feed = () => {
     const navigate = useNavigate();
-    const { tasks, isLoadingTasks, role, user, userLocation, setUserLocation, fetchTasks, notify, t, haptic } = useAppStore();
+    const { tasks, isLoadingTasks, role, user, userLocation, setUserLocation, fetchTasks, t, haptic, theme, setTheme } = useAppStore();
     const [isLocating, setIsLocating] = useState(false);
     const [activeChip, setActiveChip] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -60,6 +60,15 @@ const Feed = () => {
             handleLocateMe();
         }
     }, [fetchTasks]);
+
+    const handleThemeToggle = () => {
+        haptic('light');
+        if (theme === 'system') setTheme('dark');
+        else if (theme === 'dark') setTheme('light');
+        else setTheme('system');
+    };
+
+    const ThemeIcon = theme === 'system' ? Smartphone : theme === 'dark' ? Moon : Sun;
 
     // Haversine formula
     const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -138,9 +147,10 @@ const Feed = () => {
                 </div>
                 <button
                     className="filter-btn"
-                    onClick={() => notify(t('common.error') === 'Ошибка' ? 'Расширенные фильтры будут доступны скоро!' : 'Advanced filters coming soon! ', 'info')}
+                    onClick={handleThemeToggle}
+                    title="Сменить тему / Toggle Theme"
                 >
-                    <Settings2 size={20} />
+                    <ThemeIcon size={20} />
                 </button>
             </div>
 

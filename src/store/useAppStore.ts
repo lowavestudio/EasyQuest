@@ -128,6 +128,8 @@ interface AppState {
     t: (path: string) => any;
 
     // UI/UX
+    theme: 'system' | 'light' | 'dark';
+    setTheme: (t: 'system' | 'light' | 'dark') => void;
     haptic: (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' | 'selection') => void;
 }
 
@@ -145,6 +147,9 @@ export const useAppStore = create<AppState>()(
             userLocation: null,
             isLoadingTasks: true,
             language: 'ru',
+            theme: 'system',
+
+            setTheme: (theme) => set({ theme }),
 
             haptic: (type) => {
                 const tg = window.Telegram?.WebApp;

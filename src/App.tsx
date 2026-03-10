@@ -2,8 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
 import analytics from '@telegram-apps/analytics';
-import { translations } from './translations';
-import type { Language } from './translations';
+
 import Feed from './pages/Feed';
 import BottomNav from './components/BottomNav';
 import Wallet from './pages/Wallet';
@@ -29,8 +28,17 @@ declare global {
 }
 
 function App() {
-  const { user, login, setLanguage } = useAppStore();
+  const { user, login, setLanguage, theme } = useAppStore();
   const [init, setInit] = useState(false);
+
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (theme === 'system') {
+      document.body.className = tg?.colorScheme || 'light';
+    } else {
+      document.body.className = theme;
+    }
+  }, [theme]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -52,9 +60,13 @@ function App() {
         }
 
         // Setup theme based on Telegram
-        document.body.className = tg.colorScheme;
-        tg.onEvent('themeChanged', () => {
+        if (theme === 'system') {
           document.body.className = tg.colorScheme;
+        }
+        tg.onEvent('themeChanged', () => {
+          if (useAppStore.getState().theme === 'system') {
+            document.body.className = tg.colorScheme;
+          }
         });
 
         // Simple pseudo-auth based on Telegram User
