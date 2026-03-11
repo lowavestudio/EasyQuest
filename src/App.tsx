@@ -72,11 +72,13 @@ function App() {
         // Simple pseudo-auth based on Telegram User
         const tgUser = tg.initDataUnsafe?.user;
         if (tgUser) {
-          // Detect and set language
-          if (tg.initDataUnsafe?.user?.language_code === 'ru') {
-            setLanguage('ru');
-          } else {
-            setLanguage('en');
+          // Detect and set language only if the user hasn't saved preferences yet
+          if (!localStorage.getItem('easy-quest-storage')) {
+            if (tg.initDataUnsafe?.user?.language_code === 'ru') {
+              setLanguage('ru');
+            } else {
+              setLanguage('en');
+            }
           }
 
           await login({

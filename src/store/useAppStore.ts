@@ -224,7 +224,7 @@ export const useAppStore = create<AppState>()(
                         })
                     });
                     const user = await res.json();
-                    set({ user, balance: user.balance, role: (user.role as Role) || 'executor' });
+                    set({ user, balance: user.balance }); // Do not overwrite locally preferred role
                     await get().fetchTasks();
                     await get().refreshUser();
                 } catch (err) {
@@ -233,7 +233,7 @@ export const useAppStore = create<AppState>()(
             },
 
             logout: () => {
-                set({ user: null, balance: 0, tasks: [], transactions: [], role: 'executor' });
+                set({ user: null, balance: 0, tasks: [], transactions: [] });
             },
 
             buyStars: async (stars) => {
@@ -542,7 +542,7 @@ export const useAppStore = create<AppState>()(
         }),
         {
             name: 'easy-quest-storage',
-            partialize: (state) => ({ role: state.role, language: state.language }),
+            partialize: (state) => ({ role: state.role, language: state.language, theme: state.theme }),
         }
     )
 );
