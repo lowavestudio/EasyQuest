@@ -758,8 +758,48 @@ app.post('/api/upload', upload.single('photo'), async (req, res) => {
 // POST create task (10% platform commission or fixed fee for cash-payments)
 app.post('/api/tasks', async (req, res) => {
     const { title, description, reward, lat, lng, customerId, category, address, paymentType, cashAmount, isOnline, isPremium } = req.body;
+
+    // --- 1. Basic Validation ---
+    if (!title || title.trim().length < 5 || title.trim().length > 100) {
+        return res.status(400).json({ error: 'Заголовок должен содержать от 5 до 100 символов.' });
+    }
+    if (!description || description.trim().length < 10 || description.trim().length > 2000) {
+        return res.status(400).json({ error: 'Описание должно содержать от 10 до 2000 символов.' });
+    }
+
+    // --- 2. Spam / Bad Words Filter ---
+    const badWords = ['казино', 'наркот', 'ставки', '1xbet', 'скам', 'накрутк', 'порно'];
+    const textToCheck = (title + ' ' + description).toLowerCase();
+    for (const w of badWords) {
+        if (textToCheck.includes(w)) {
+            return res.status(400).json({ error: 'Текст содержит недопустимые слова.' });
+        }
+    }
+
+    // --- 3. Coordinates Validation (if offline) ---
+    if (!isOnline) {
+        const numLat = Number(lat);
+        const numLng = Number(lng);
+        if (isNaN(numLat) || isNaN(numLng) || numLat < -90 || numLat > 90 || numLng < -180 || numLng > 180) {
+            return res.status(400).json({ error: 'Некорректные координаты местоположения.' });
+        }
+    }
+
     try {
         const result = await prisma.$transaction(async (tx) => {
+            // --- 4. Rate Limiting ---
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+            const recentTasksCount = await tx.task.count({
+                where: {
+                    customerId,
+                    createdAt: { gte: oneHourAgo }
+                }
+            });
+
+            if (recentTasksCount >= 5) { // Limit: 5 tasks per hour
+                throw new Error('Вы превысили лимит: не более 5 заданий в час. Пожалуйста, подождите.');
+            }
+
             const user = await tx.user.findUnique({ where: { id: customerId } });
 
             const pType = paymentType === 'cash' ? 'cash' : 'stars';
@@ -1064,6 +1104,30 @@ app.post('/api/tasks/:id/messages', async (req, res) => {
 
 // Serve static files from the React app
 const distPath = path.join(__dirname, '../dist');
+
+// POST report a task
+app.post('/api/tasks/:id/report', async (req, res) => {
+    const { reporterId } = req.body;
+    try {
+        const task = await prisma.task.findUnique({
+            where: { id: Number(req.params.id) },
+            include: { customer: true }
+        });
+        if (!task) return res.status(404).json({ error: 'Not found' });
+
+        const reporter = await prisma.user.findUnique({ where: { id: reporterId } });
+
+        if (process.env.ADMIN_CHAT_ID && BOT_TOKEN) {
+            await sendNotification(process.env.ADMIN_CHAT_ID,
+                `🚩 <b>ЖАЛОБА НА ЗАДАНИЕ!</b>\n\nЗадание: <b>${task.title}</b> (ID: ${task.id})\nЗаказчик: <a href="tg://user?id=${task.customerId}">${task.customer.firstName}</a>\nПожаловался: <a href="tg://user?id=${reporterId}">${reporter?.firstName || 'Неизвестно'}</a>\n\nПроверьте задание на нарушения.`
+            );
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 if (fs.existsSync(distPath)) {
     app.use(express.static(distPath));
 }

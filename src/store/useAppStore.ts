@@ -106,6 +106,7 @@ interface AppState {
     addTask: (task: { title: string, description: string, reward: number, lat: number, lng: number, category: string, address?: string, paymentType?: 'stars' | 'cash', cashAmount?: string, isOnline?: boolean, isPremium?: boolean }) => Promise<void>;
     setUserLocation: (coords: [number, number]) => void;
     abandonTask: (id: number) => Promise<void>;
+    reportTask: (id: number) => Promise<void>;
     cancelOwnTask: (id: number) => Promise<void>;
     refreshUser: () => Promise<void>;
     uploadPhoto: (file: File) => Promise<string | null>;
@@ -482,6 +483,22 @@ export const useAppStore = create<AppState>()(
                     await get().refreshUser();
                 } catch (err) {
                     get().notify('Не удалось отменить задание', 'error');
+                }
+            },
+
+            reportTask: async (id) => {
+                const { user, t } = get();
+                if (!user) return;
+                try {
+                    const res = await fetch(`${API_URL}/tasks/${id}/report`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reporterId: user.id })
+                    });
+                    if (!res.ok) throw new Error();
+                    get().notify(t('task_details').modals.report_success, 'success');
+                } catch (err) {
+                    get().notify(t('common').error, 'error');
                 }
             },
 

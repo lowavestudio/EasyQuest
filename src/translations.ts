@@ -147,7 +147,11 @@ export const translations = {
                 cancel_own_msg_1: 'Задание будет снято с публикации. ',
                 cancel_own_msg_2: ' ★ вернутся на ваш баланс.',
                 cancel_own_confirm: 'Да, отменить',
-                keep: 'Нет, оставить'
+                keep: 'Нет, оставить',
+                report_title: 'Пожаловаться',
+                report_msg: 'Причина жалобы (спам, мошенничество, неприемлемый контент). Модераторы проверят задание.',
+                report_confirm: 'Отправить жалобу',
+                report_success: 'Жалоба отправлена'
             },
             warnings: {
                 accept: 'Принимая задание, вы соглашаетесь выполнить его в установленный срок.',
@@ -375,7 +379,11 @@ export const translations = {
                 cancel_own_msg_1: 'Task will be unpublished. ',
                 cancel_own_msg_2: ' ★ will be returned to your balance.',
                 cancel_own_confirm: 'Yes, cancel',
-                keep: 'No, keep'
+                keep: 'No, keep',
+                report_title: 'Report Task',
+                report_msg: 'Reason for reporting (spam, scam, inappropriate content). Moderators will check.',
+                report_confirm: 'Submit Report',
+                report_success: 'Report submitted'
             },
             warnings: {
                 accept: 'By accepting the task, you agree to complete it within the specified timeframe.',

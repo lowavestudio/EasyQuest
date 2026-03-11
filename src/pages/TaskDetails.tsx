@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, MapPin, Clock, Info, CheckCircle2, XCircle, Star, MessageSquare, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Upload, ShieldCheck, Navigation, Crown } from 'lucide-react';
+import { ChevronLeft, MapPin, Clock, Info, CheckCircle2, XCircle, Star, MessageSquare, Truck, Camera, Heart, Monitor, Megaphone, HelpCircle, Upload, ShieldCheck, Navigation, Crown, Flag } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -36,9 +36,10 @@ const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:3001';
 const TaskDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { tasks, acceptTask, abandonTask, cancelOwnTask, approveTask, completeTask, uploadPhoto, user, t, language, haptic } = useAppStore();
+    const { tasks, acceptTask, abandonTask, cancelOwnTask, approveTask, completeTask, uploadPhoto, reportTask, user, t, language, haptic } = useAppStore();
     const [showAbandonModal, setShowAbandonModal] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -117,6 +118,14 @@ const TaskDetails = () => {
         navigate('/feed');
     };
 
+    const handleReport = async () => {
+        haptic('light');
+        setIsProcessing(true);
+        await reportTask(task.id);
+        setShowReportModal(false);
+        setIsProcessing(false);
+    };
+
     const handlePhotoSubmit = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -139,7 +148,13 @@ const TaskDetails = () => {
                     <ChevronLeft size={22} />
                 </button>
                 <div className="detail-title">{tdT.title}</div>
-                <div style={{ width: 36 }} />
+                <div style={{ width: 36, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                    {!isOwner && (
+                        <button className="back-btn" onClick={() => setShowReportModal(true)} style={{ color: '#ef4444', marginRight: '-8px' }}>
+                            <Flag size={18} />
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="detail-content">
@@ -453,6 +468,7 @@ const TaskDetails = () => {
             <ReviewModal open={showReviewModal} taskTitle={task.title} onClose={() => setShowReviewModal(false)} onConfirm={handleApprove} />
             <ConfirmModal open={showAbandonModal} title={tdT.actions.abandon + "?"} message={tdT.modals.abandon_msg} confirmText={tdT.modals.abandon_confirm} cancelText={tdT.modals.cancel} danger onConfirm={handleAbandon} onCancel={() => setShowAbandonModal(false)} />
             <ConfirmModal open={showCancelModal} title={tdT.actions.cancel + "?"} message={tdT.modals.cancel_own_msg_1 + task.reward + tdT.modals.cancel_own_msg_2} confirmText={tdT.modals.cancel_own_confirm} cancelText={tdT.modals.keep} danger onConfirm={handleCancelOwn} onCancel={() => setShowCancelModal(false)} />
+            <ConfirmModal open={showReportModal} title={tdT.modals.report_title} message={tdT.modals.report_msg} confirmText={tdT.modals.report_confirm} cancelText={tdT.modals.cancel} danger onConfirm={handleReport} onCancel={() => setShowReportModal(false)} />
         </div>
     );
 };
